@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-#DllLoad Color
+#DllLoad %A_ScriptDir%\Color.dll
 
 class Color
 {
