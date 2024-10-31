@@ -1,7 +1,6 @@
 $srcDir = "src"
 $outputFile = "Color.dll"
 
-# Check if Color.dll already exists
 if (Test-Path $outputFile)
 {
     $response = Read-Host "$outputFile already exists. Do you want to overwrite it? (Y/N)"
@@ -12,17 +11,20 @@ if (Test-Path $outputFile)
     }
 }
 
-# Create build command with required flags
-$buildCmd = "g++ -shared -o $outputFile $srcDir/Color.h -DBUILDING_DLL -fPIC -std=c++17 -Wall -Wextra -shared -fopenmp -I$srcDir"
+$sourceFiles = "$srcDir/Color.cpp $srcDir/ColorBuffer.cpp $srcDir/Gradient.cpp"
+$compilerFlags = "-DBUILDING_DLL -fPIC -std=c++17 -Wall -Wextra"
+$linkerFlags = '-static -static-libgcc -static-libstdc++ "-Wl,--enable-stdcall-fixup" "-Wl,-Bstatic"'
+$libraries = "-lgdi32 -fopenmp"
+$includes = "-I$srcDir"
 
-# Execute the build command
+$buildCmd = "g++ -shared -o `"$outputFile`" $sourceFiles $compilerFlags $linkerFlags $libraries $includes"
+
 Write-Host "Building $outputFile..."
 Invoke-Expression $buildCmd
 
-# Check if build was successful
 if ($LASTEXITCODE -eq 0)
 {
-    Write-Host "Build completed successfully. Output: $outputFile"
+    Write-Host "Build completed successfully."
 }
 else
 {

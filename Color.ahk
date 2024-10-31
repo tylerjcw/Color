@@ -1,6 +1,12 @@
 #Requires AutoHotkey v2.0
 
-#DllLoad %A_ScriptDir%\Color.dll
+dll_path := StrReplace(A_LineFile, ".ahk", ".dll")
+if FileExist(dll_path)
+{
+    dll := DllCall("LoadLibrary", "Str", dll_path, "Ptr")
+    if not dll
+        throw Error("Failed to load Color.dll, please verify it is in the same folder as Color.ahk")
+}
 
 class Color
 {

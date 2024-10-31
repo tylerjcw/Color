@@ -375,7 +375,6 @@ extern "C"
         }
         catch (const std::exception& e)
         {
-            std::cout << "Deserialization error: " << e.what() << "\n";
             return nullptr;
         }
     }
