@@ -2024,8 +2024,8 @@ extern "C"
 
     #pragma region Utility
     COLOR_API double GetColorLuminance(Color* color) { return color->GetLuminance(); }
-    COLOR_API bool IsColorLight(Color* color) { return color->IsLight(); }
-    COLOR_API bool IsColorDark(Color* color) { return color->IsDark(); }
+    COLOR_API bool IsColorLight(Color* color) { return color->IsLight() ? TRUE : FALSE; }
+    COLOR_API bool IsColorDark(Color* color) { return color->IsDark() ? TRUE : FALSE; }
     COLOR_API double ColorGetContrast(Color* color1, Color* color2) { return color1->GetContrast(*color2); }
     COLOR_API bool IsColorAccessible(Color* color, Color* background, int level) { return color->IsAccessible(*background, static_cast<Color::AccessibilityLevel>(level)); }
     COLOR_API Color* CreateRandomColor(int alphaRand) { return new Color(Color::Random(alphaRand == 0 ? false : true)); }

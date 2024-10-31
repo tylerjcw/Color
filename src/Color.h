@@ -402,8 +402,8 @@ namespace KTLib
             static inline Color YellowGreen()          { return YELLOW_GREEN; }
 
             inline void Invert()                      { *this = -*this; }
-            inline bool IsLight() const               { return GetLuminance() > 0.5; }
-            inline bool IsDark() const                { return GetLuminance() <= 0.5; }
+            bool IsLight() const               { return GetLuminance() > 0.5; }
+            bool IsDark() const                { return GetLuminance() <= 0.5; }
 
             inline const std::string& GetFormatString() const { return formatString; }
             inline void SetFormatString(const std::string& format) { formatString = format; }
