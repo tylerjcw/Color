@@ -641,27 +641,6 @@ class Color
     GetContrast(other) => DllCall("Color\ColorGetContrast", "Ptr", this.Ptr, "Ptr", other.Ptr, "Double")
 
     /**
-     * Increases the saturation of the color by the specified amount.
-     * @param {number} amount - The amount to increase the saturation.
-     * @returns {Color}
-     */
-    Saturate(amount) => Color.FromPtr(DllCall("Color\SaturateColor", "Ptr", this.Ptr, "Double", amount, "Ptr"))
-
-    /**
-     * Decreases the saturation of the color by the specified amount.
-     * @param {number} amount - The amount to decrease the saturation.
-     * @returns {Color}
-     */
-    Desaturate(amount) => Color.FromPtr(DllCall("Color\ColorDesaturate", "Ptr", this.Ptr, "Double", amount, "Ptr"))
-
-    /**
-     * Darkens the color by the specified amount.
-     * @param {number} amount - The amount to darken the color.
-     * @returns {Color}
-     */
-    Darken(amount) => Color.FromPtr(DllCall("Color\ColorDarken", "Ptr", this.Ptr, "Double", amount, "Ptr"))
-
-    /**
      * Calculates the complementary color.
      * @returns {Color}
      */
@@ -888,24 +867,6 @@ class Color
             "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3], "Double", matrix[3][4], "Double", matrix[3][5],
             "Double", matrix[4][1], "Double", matrix[4][2], "Double", matrix[4][3], "Double", matrix[4][4], "Double", matrix[4][5],
             "Double", matrix[5][1], "Double", matrix[5][2], "Double", matrix[5][3], "Double", matrix[5][4], "Double", matrix[5][5],
-            "Ptr"))
-    }
-
-    AddColorMatrix(matrix)
-    {
-        return Color.FromPtr(DllCall("Color\ColorAddMatrix", "Ptr", this.Ptr,
-            "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3],
-            "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3],
-            "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3],
-            "Ptr"))
-    }
-
-    SubtractColorMatrix(matrix)
-    {
-        return Color.FromPtr(DllCall("Color\ColorSubtractMatrix", "Ptr", this.Ptr,
-            "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3],
-            "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3],
-            "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3],
             "Ptr"))
     }
 
