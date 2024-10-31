@@ -617,35 +617,35 @@ class Color
      * @param {number} degrees - The number of degrees to shift the hue.
      * @returns {Color}
      */
-    ShiftHue(degrees) => Color.FromPtr(DllCall("Color\ShiftHueColor", "Ptr", this.Ptr, "Double", degrees, "Ptr"))
+    ShiftHue(degrees) => (DllCall("Color\ShiftHueColor", "Ptr", this.Ptr, "Double", degrees), this)
 
     /**
      * Shifts the saturation of the color by the specified amount.
      * @param {number} amount - The amount to shift the saturation.
      * @returns {Color}
      */
-    ShiftSaturation(amount) => Color.FromPtr(DllCall("Color\ShiftColorSaturation", "Ptr", this.Ptr, "Double", amount, "Ptr"))
+    ShiftSaturation(amount) => (DllCall("Color\ShiftSaturationColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Shifts the lightness of the color by the specified amount.
      * @param {number} amount - The amount to shift the lightness.
      * @returns {Color}
      */
-    ShiftLightness(amount) => Color.FromPtr(DllCall("Color\ShiftLightnessColor", "Ptr", this.Ptr, "Double", amount, "Ptr"))
+    ShiftLightness(amount) => (DllCall("Color\ShiftLightnessColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Shifts the whiteness of the color by the specified amount.
      * @param {number} amount - The amount to shift the whiteness.
      * @returns {Color}
      */
-    ShiftWhiteness(amount) => Color.FromPtr(DllCall("Color\ShiftColorWhiteness", "Ptr", this.Ptr, "Double", amount, "Ptr"))
+    ShiftWhiteness(amount) => (DllCall("Color\ShiftWhitenessColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Shifts the blackness of the color by the specified amount.
      * @param {number} amount - The amount to shift the blackness.
      * @returns {Color}
      */
-    ShiftBlackness(amount) => Color.FromPtr(DllCall("Color\ShiftColorBlackness", "Ptr", this.Ptr, "Double", amount, "Ptr"))
+    ShiftBlackness(amount) => (DllCall("Color\ShiftBlacknessColorBlackness", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Calculates the contrast ratio between this color and another color.
@@ -658,7 +658,7 @@ class Color
      * Calculates the complementary color.
      * @returns {Color}
      */
-    Complement() => Color.FromPtr(DllCall("Color\ColorComplement", "Ptr", this.Ptr, "Ptr"))
+    Complement() => (DllCall("Color\ColorComplement", "Ptr", this.Ptr), this)
 
     /**
      * Determines if the color is accessible when used with the given background color.

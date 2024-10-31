@@ -190,7 +190,15 @@ namespace KTLib
 
     Color& Color::operator*=(const ColorMatrix& matrix)
     {
-        *this = *this * matrix;
+        double nr = r / 255.0;
+        double ng = g / 255.0;
+        double nb = b / 255.0;
+
+        r = static_cast<uint8_t>(std::clamp((matrix[0][0]*nr + matrix[0][1]*ng + matrix[0][2]*nb + matrix[0][3]*a/255.0 + matrix[0][4]) * 255.0, 0.0, 255.0));
+        g = static_cast<uint8_t>(std::clamp((matrix[1][0]*nr + matrix[1][1]*ng + matrix[1][2]*nb + matrix[1][3]*a/255.0 + matrix[1][4]) * 255.0, 0.0, 255.0));
+        b = static_cast<uint8_t>(std::clamp((matrix[2][0]*nr + matrix[2][1]*ng + matrix[2][2]*nb + matrix[2][3]*a/255.0 + matrix[2][4]) * 255.0, 0.0, 255.0));
+        a = static_cast<uint8_t>(std::clamp((matrix[3][0]*nr + matrix[3][1]*ng + matrix[3][2]*nb + matrix[3][3]*a/255.0 + matrix[3][4]) * 255.0, 0.0, 255.0));
+
         return *this;
     }
 
@@ -1002,84 +1010,48 @@ namespace KTLib
     #pragma region Color Manipulation
     void Color::ShiftHue(double degrees)
     {
-        double cosA = cos(degrees * CONST_PI / 180.0);
-        double sinA = sin(degrees * CONST_PI / 180.0);
-
-        const double r = 0.299, g = 0.587, b = 0.114;
-        ColorMatrix hueMatrix = {{
-            {r + (1 - r) * cosA + 0.168 * sinA, g - g * cosA + 0.330 * sinA      , b - b * cosA - 0.497 * sinA      , 0, 0},
-            {r - r * cosA - 0.328 * sinA      , g + (1 - g) * cosA + 0.035 * sinA, b - b * cosA + 0.292 * sinA      , 0, 0},
-            {r - r * cosA + 1.250 * sinA      , g - g * cosA - 1.050 * sinA      , b + (1 - b) * cosA - 0.203 * sinA, 0, 0},
-            {0                                , 0                                , 0                                , 1, 0},
-            {0                                , 0                                , 0                                , 0, 1}
-        }};
-
-        *this *= hueMatrix;
+        double h, s, l;
+        ToHSL(h, s, l);
+        h+= degrees;
+        h = fmod(h, 360);
+        if (h < 0) h += 360;
+        *this = FromHSL(h, s, l);
     }
 
     void Color::ShiftSaturation(double amount)
     {
-        amount = std::clamp(amount / 100.0, -1.0, 1.0);
-        double s = 1.0 + amount;
-        const double r = 0.299, g = 0.587, b = 0.114;
-
-        ColorMatrix satMatrix = {{
-            {r + (1-r) * s, g - g * s    , b - b * s    , 0, 0},
-            {r - r * s    , g + (1-g) * s, b - b * s    , 0, 0},
-            {r - r * s    , g - g * s    , b + (1-b) * s, 0, 0},
-            {0            , 0            , 0            , 1, 0},
-            {0            , 0            , 0            , 0, 1}
-        }};
-
-
-        *this *= satMatrix;
+        double h, s, l;
+        ToHSL(h, s, l);
+        s += amount/100.0;
+        s = std::clamp(s, 0.0, 1.0);
+        *this = FromHSL(h, s, l);
     }
 
     void Color::ShiftLightness(double amount)
     {
-        double l = 1 + std::clamp(amount / 100.0, -1.0, 1.0);
-        const double r = 0.2126, g = 0.7152, b = 0.0722;
-
-        ColorMatrix lightMatrix = {{
-            {r + (1-r) * l, r - r * l    , r - r * l    , 0, 0},
-            {g - g * l    , g + (1-g) * l, g - g * l    , 0, 0},
-            {b - b * l    , b - b * l    , b + (1-b) * l, 0, 0},
-            {0            , 0            , 0            , 1, 0},
-            {0            , 0            , 0            , 0, 1}
-        }};
-
-        *this *= lightMatrix;
+        double h, s, l;
+        ToHSL(h, s, l);
+        l += amount/100.0;
+        l = std::clamp(l, 0.0, 1.0);
+        *this = FromHSL(h, s, l);
     }
 
     void Color::ShiftValue(double amount)
     {
-        double v = 1 + std::clamp(amount / 100.0, -1.0, 1.0);
-
-        ColorMatrix valueMatrix = {{
-            {v, 0, 0, 0, 0},
-            {0, v, 0, 0, 0},
-            {0, 0, v, 0, 0},
-            {0, 0, 0, 1, 0},
-            {0, 0, 0, 0, 1}
-        }};
-
-        *this *= valueMatrix;
+        double h, s, v;
+        ToHSV(h, s, v);
+        v += amount/100.0;
+        v = std::clamp(v, 0.0, 1.0);
+        *this = FromHSV(h, s, v);
     }
 
     void Color::ShiftIntensity(double amount)
     {
-        double i = std::clamp(amount / 100.0, -1.0, 1.0) / 3.0;
-        double s = 1 + i;
-
-        ColorMatrix intensityMatrix = {{
-            {s, i, i, 0, 0},
-            {i, s, i, 0, 0},
-            {i, i, s, 0, 0},
-            {0, 0, 0, 1, 0},
-            {0, 0, 0, 0, 1}
-        }};
-
-        *this *= intensityMatrix;
+        double h, s, i;
+        ToHSI(h, s, i);
+        i += amount/100.0;
+        i = std::clamp(i, 0.0, 1.0);
+        *this = FromHSI(h, s, i);
     }
 
     void Color::ShiftWhiteLevel(double amount)
