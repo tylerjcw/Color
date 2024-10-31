@@ -1296,14 +1296,14 @@ class ColorBuffer
      */
     SetAlpha(value) => (DllCall("Color\SetAlphaColorBuffer", "Ptr", this.Ptr, "Int", value), this)
 
-    MultiplyColorMatrix(matrix) {
-        DllCall("Color\ColorBufferMultiplyMatrix", "Ptr", this.Ptr,
+    ApplyMatrix(matrix)
+    {
+        DllCall("Color\ColorBufferApplyMatrix", "Ptr", this.Ptr,
             "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3], "Double", matrix[1][4], "Double", matrix[1][5],
             "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3], "Double", matrix[2][4], "Double", matrix[2][5],
             "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3], "Double", matrix[3][4], "Double", matrix[3][5],
             "Double", matrix[4][1], "Double", matrix[4][2], "Double", matrix[4][3], "Double", matrix[4][4], "Double", matrix[4][5],
-            "Double", matrix[5][1], "Double", matrix[5][2], "Double", matrix[5][3], "Double", matrix[5][4], "Double", matrix[5][5],
-            "Ptr")
+            "Double", matrix[5][1], "Double", matrix[5][2], "Double", matrix[5][3], "Double", matrix[5][4], "Double", matrix[5][5])
         return this
     }
 

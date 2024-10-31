@@ -1469,7 +1469,7 @@ extern "C"
         return arr;
     }
 
-    COLOR_API void ColorBufferMultiplyMatrix(ColorBuffer* buffer,
+    COLOR_API void ColorBufferApplyMatrix(ColorBuffer* buffer,
         double m11, double m12, double m13, double m14, double m15,
         double m21, double m22, double m23, double m24, double m25,
         double m31, double m32, double m33, double m34, double m35,
@@ -1487,7 +1487,8 @@ extern "C"
 
         for(int i = 0; i < 25; i++) matrix.data[i/5][i%5] = m[i];
 
-        for (int i = 0; i < buffer->GetSize(); i++)
+        #pragma omp parallel for
+        for (int i = 0; i < buffer->GetWidth() * buffer->GetHeight(); i++)
         {
             Color color = buffer->GetAt(i);
             buffer->SetAt(i, color * matrix);

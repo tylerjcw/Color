@@ -1,12 +1,18 @@
 $srcDir = "src"
 $outputFile = "Color.dll"
 
+$reset = "`e[0m"
+$cyan = "`e[36m"
+$yellow = "`e[33m"
+$red = "`e[31m"
+$green = "`e[32m"
+
 if (Test-Path $outputFile)
 {
-    $response = Read-Host "$outputFile already exists. Do you want to overwrite it? (Y/N)"
+    $response = Read-Host "${yellow}$outputFile${reset} already exists. Do you want to overwrite it? (Y/N)"
     if ($response -ne "Y" -and $response -ne "y")
     {
-        Write-Host "Build cancelled."
+        Write-Host "${red}Build cancelled.${reset}"
         exit
     }
 }
@@ -19,14 +25,14 @@ $includes = "-I$srcDir"
 
 $buildCmd = "g++ -shared -o `"$outputFile`" $sourceFiles $compilerFlags $linkerFlags $libraries $includes"
 
-Write-Host "Building $outputFile..."
+Write-Host "Building ${cyan}$outputFile${reset}..."
 Invoke-Expression $buildCmd
 
 if ($LASTEXITCODE -eq 0)
 {
-    Write-Host "Build completed successfully."
+    Write-Host "${green}Build completed successfully.${reset}`n"
 }
 else
 {
-    Write-Host "Build failed with exit code $LASTEXITCODE"
+    Write-Host "${red}Build failed with exit code $LASTEXITCODE${reset}`n"
 }
