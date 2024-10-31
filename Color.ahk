@@ -166,14 +166,10 @@ class Color
 
     /**
      * Creates a random color.
-     * @returns {Color} A new Color object with random RGB values.
+     * @returns {Color}
      */
     static Random(alphaRand := true) => Color.FromPtr(DllCall("Color\CreateRandomColor", "Int", alphaRand, "Ptr"))
 
-    /**
-     * A Color object representing Red `#FFFF0000`
-     * @type {Color}
-     */
     static AliceBlue => Color.FromPtr(DllCall("Color\CreateAliceBlueColor", "Ptr"))
     static AntiqueWhite => Color.FromPtr(DllCall("Color\CreateAntiqueWhiteColor", "Ptr"))
     static Aqua => Color.FromPtr(DllCall("Color\CreateAquaColor", "Ptr"))
@@ -486,7 +482,7 @@ class Color
     static FromTemp(kelvin) => Color.FromPtr(DllCall("Color\ColorFromTemp", "Double", kelvin, "Ptr"))
 
     /**
-     * Creates a Color object from sRGB values.
+     * Creates a Color object from Linear sRGB values.
      * @param {number} r - The red value (0-1).
      * @param {number} g - The green value (0-1).
      * @param {number} b - The blue value (0-1).
@@ -520,11 +516,34 @@ class Color
         return Color.FromPtr(DllCall("Color\ColorFromNCol", "Ptr", hBuf, "Double", w, "Double", b, "Int", a, "Ptr"))
     }
 
+    /**
+     * Mixes two colors with the specified weight.
+     * @returns {Color}
+     */
     static Mix(color1, color2, weight := 0.5) => Color.FromPtr(DllCall("Color\ColorMix", "Ptr", color1.Ptr, "Ptr", color2.Ptr, "Double", weight, "Ptr"))
+
+    /**
+     * Screens two colors.
+     * @returns {Color}
+     */
     static Screen(color1, color2) => Color.FromPtr(DllCall("Color\ColorScreen", "Ptr", color1.Ptr, "Ptr", color2.Ptr, "Ptr"))
+
+    /**
+     * Multiplies two colors.
+     * @returns {Color}
+     */
     static Multiply(color1, color2) => Color.FromPtr(DllCall("Color\ColorMultiply", "Ptr", color1.Ptr, "Ptr", color2.Ptr, "Ptr"))
+
+    /**
+     * Overlays two colors.
+     * @returns {Color}
+     */
     static Overlay(color1, color2) => Color.FromPtr(DllCall("Color\ColorOverlay", "Ptr", color1.Ptr, "Ptr", color2.Ptr, "Ptr"))
 
+    /**
+     * Averages many colors.
+     * @returns {Color}
+     */
     static Average(colors*)
     {
         colorPtrs := Buffer(A_PtrSize * colors.Length)
@@ -551,14 +570,34 @@ class Color
      */
     Sepia(factor) => (DllCall("Color\SepiaColor", "Ptr", this.Ptr, "Double", factor), this)
 
+    /**
+     * Applies a cross process matrix to the color.
+     * @returns {Color}
+     */
     CrossProcess(factor) => (DllCall("Color\CrossProcessColor", "Ptr", this.Ptr, "Double", factor), this)
 
+    /**
+     * Applies a moonlight matrix to the color.
+     * @returns {Color}
+     */
     Moonlight(factor) => (DllCall("Color\MoonlightColor", "Ptr", this.Ptr, "Double", factor), this)
 
+    /**
+     * Applies a vintage film matrix to the color.
+     * @returns {Color}
+     */
     VintageFilm(factor) => (DllCall("Color\VintageFilmColor", "Ptr", this.Ptr, "Double", factor), this)
 
+    /**
+     * Applies a technicolor matrix to the color.
+     * @returns {Color}
+     */
     Technicolor(factor) => (DllCall("Color\TechnicolorColor", "Ptr", this.Ptr, "Double", factor), this)
 
+    /**
+     * Applies a Polaroid matrix to the color.
+     * @returns {Color}
+     */
     Polaroid(factor) => (DllCall("Color\PolaroidColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
@@ -776,6 +815,10 @@ class Color
      */
     ToCMYK() => (DllCall("Color\ColorToCMYK"   , "Ptr", this.Ptr, "Ptr", c := Buffer(8, 0)  , "Ptr", m := Buffer(8, 0), "Ptr", y := Buffer(8, 0), "Ptr", k := Buffer(8, 0) , "Ptr", a := Buffer(4, 0)), {C: NumGet(c, "Double"), M: NumGet(m, "Double"), Y: NumGet(y, "Double"), K: NumGet(k, "Double"), A: NumGet(a, "Int")})
 
+    /**
+     * Generates an analogous color scheme.
+     * @returns {Color[]} An array of Color objects representing the color scheme.
+     */
     Analogous(angle := 30, count := 3)
     {
         pColors := DllCall("Color\ColorAnalogous", "Ptr", this.ptr, "Double", angle, "Int", count, "Ptr", Buffer(count * A_PtrSize, 0), "Ptr")
@@ -802,6 +845,10 @@ class Color
         return colors
     }
 
+    /**
+     * Generates a tetradic color scheme.
+     * @returns {Color[]} An array of four Color objects representing the tetradic color scheme.
+     */
     Tetradic(angle := 45)
     {
         pColors := DllCall("Color\ColorTetradic", "Ptr", this.ptr, "Double", angle, "Ptr", Buffer(4 * A_PtrSize, 0), "Ptr")
@@ -835,7 +882,8 @@ class Color
      */
     Square() => this.Analogous(90, 4)
 
-    MultiplyColorMatrix(matrix) {
+    MultiplyColorMatrix(matrix)
+    {
         return Color.FromPtr(DllCall("Color\ColorMultiplyMatrix", "Ptr", this.Ptr,
             "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3], "Double", matrix[1][4], "Double", matrix[1][5],
             "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3], "Double", matrix[2][4], "Double", matrix[2][5],
@@ -845,7 +893,8 @@ class Color
             "Ptr"))
     }
 
-    AddColorMatrix(matrix) {
+    AddColorMatrix(matrix)
+    {
         return Color.FromPtr(DllCall("Color\ColorAddMatrix", "Ptr", this.Ptr,
             "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3],
             "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3],
@@ -853,7 +902,8 @@ class Color
             "Ptr"))
     }
 
-    SubtractColorMatrix(matrix) {
+    SubtractColorMatrix(matrix)
+    {
         return Color.FromPtr(DllCall("Color\ColorSubtractMatrix", "Ptr", this.Ptr,
             "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3],
             "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3],
