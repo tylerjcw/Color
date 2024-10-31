@@ -1,13 +1,5 @@
 #Requires AutoHotkey v2.0
 
-dll_path := StrReplace(A_LineFile, ".ahk", ".dll")
-if FileExist(dll_path)
-{
-    dll := DllCall("LoadLibrary", "Str", dll_path, "Ptr")
-    if not dll
-        throw Error("Failed to load Color.dll, please verify it is in the same folder as Color.ahk")
-}
-
 class Color
 {
     /**
@@ -1879,4 +1871,28 @@ class Gradient
      * @returns {Gradient} A new Gradient instance with the base set to Gradient.Prototype and the given Ptr.
      */
     static FromPtr(Ptr) => {base: Gradient.Prototype, Ptr: Ptr}
+}
+
+class __ColorLib
+{
+    static hModule := 0
+
+    static __New()
+    {
+        dll_path := StrReplace(A_LineFile, ".ahk", ".dll")
+        if FileExist(dll_path) and not __ColorLib.hModule
+        {
+            __ColorLib.hModule := DllCall("LoadLibrary", "Str", dll_path, "Ptr")
+            if not __ColorLib.hModule
+                throw Error("Failed to load Color.dll, please verify it is in the same folder as Color.ahk")
+        }
+    }
+
+    static __Delete()
+    {
+        if __ColorLib.hModule
+            DllCall("FreeLibrary", "Ptr", __ColorLib.hModule)
+        else
+            throw Error("Color.dll not unloaded successfully")
+    }
 }
