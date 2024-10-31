@@ -2116,7 +2116,7 @@ class ColorPicker
                 DllCall("StretchBlt", "Ptr", hHighResDC, "Int", 0, "Int", 0, "Int", previewWidth * 4, "Int", previewHeight * 4, "Ptr", hMemDC, "Int", 0, "Int", 0, "Int", width, "Int", height, "UInt", 0x00CC0020)
 
                 ; Draw background rectangle
-                hBrush := DllCall("CreateSolidBrush", "UInt", this.TextBGColor.ToInt(1), "Ptr")
+                hBrush := DllCall("CreateSolidBrush", "UInt", this.TextBGColor.ToInt(3), "Ptr")
                 rect := Buffer(16, 0)
                 NumPut("Int", 0, rect, 0)
                 NumPut("Int", previewHeight * 4, rect, 4)
@@ -2127,8 +2127,8 @@ class ColorPicker
 
                 ; Render text at high resolution
                 DllCall("SelectObject", "Ptr", hHighResDC, "Ptr", hFont)
-                DllCall("SetTextColor", "Ptr", hHighResDC, "UInt", this.TextFGColor.ToInt(1))
-                DllCall("SetBkColor", "Ptr", hHighResDC, "UInt", this.TextBGColor.ToInt(1))
+                DllCall("SetTextColor", "Ptr", hHighResDC, "UInt", this.TextFGColor.ToInt(3))
+                DllCall("SetBkColor", "Ptr", hHighResDC, "UInt", this.TextBGColor.ToInt(3))
                 textWidth := DllCall("GetTextExtentPoint32", "Ptr", hHighResDC, "Str", hexColor, "Int", StrLen(hexColor), "Ptr", rect)
                 textX := (previewWidth * 4 - NumGet(rect, 0, "Int")) // 2
                 textY := previewHeight * 4 + (textHeight * 4 - scaledFontSize * 4) // 2
