@@ -315,21 +315,11 @@ class Color
     static YellowGreen => Color.FromPtr(DllCall("Color\CreateYellowGreenColor", "Ptr"))
 
     /**
-     * Creates a gradient with the specified number of steps and colors.
-     * @param {number} [steps=10] - The number of steps in the gradient.
-     * @param {...Color} colors - The colors to use in the gradient.
-     * @returns {Gradient}
-     */
-    static Gradient(steps := 10, colors*) => Gradient(steps, colors*)
-
-    /**
      * Creates a Color object from a pointer.
      * @param {Ptr} Ptr - The pointer to the color data.
      * @returns {Color}
      */
     static FromPtr(Ptr) => {base: Color.Prototype, Ptr: Ptr}
-
-
 
     /**
      * Creates a Color object from Adobe RGB values.
@@ -859,9 +849,9 @@ class Color
      */
     Square() => this.Analogous(90, 4)
 
-    MultiplyColorMatrix(matrix)
+    ApplyColorMatrix(matrix)
     {
-        return Color.FromPtr(DllCall("Color\ColorMultiplyMatrix", "Ptr", this.Ptr,
+        return Color.FromPtr(DllCall("Color\ColorApplyMatrix", "Ptr", this.Ptr,
             "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3], "Double", matrix[1][4], "Double", matrix[1][5],
             "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3], "Double", matrix[2][4], "Double", matrix[2][5],
             "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3], "Double", matrix[3][4], "Double", matrix[3][5],
@@ -975,7 +965,7 @@ class Color
 
 class ColorBuffer
 {
-    __New(gradientOrWidth, height?, color?)
+    __New(gradientOrWidth, height?, col?)
     {
         if gradientOrWidth is Gradient  ; If first param is a Gradient
         {
@@ -985,7 +975,7 @@ class ColorBuffer
         }
         else  ; Existing width/height constructor
         {
-            this.Ptr := DllCall("Color\CreateColorBufferFromWHC", "Int", gradientOrWidth, "Int", height, "Ptr", (color ?? Color.Transparent).Ptr, "Ptr")
+            this.Ptr := DllCall("Color\CreateColorBufferFromWHC", "Int", gradientOrWidth, "Int", height, "Ptr", (col ?? Color.Transparent).Ptr, "Ptr")
         }
     }
 
