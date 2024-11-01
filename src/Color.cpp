@@ -442,18 +442,20 @@ namespace KTLib
         double x = c * (1 - std::abs(std::fmod(h, 2.0) - 1));
         double m = l - c / 2;
 
-        double r, g, b;
-        if (h < 1) { r = c; g = x; b = 0; }
-        else if (h < 2) { r = x; g = c; b = 0; }
-        else if (h < 3) { r = 0; g = c; b = x; }
-        else if (h < 4) { r = 0; g = x; b = c; }
-        else if (h < 5) { r = x; g = 0; b = c; }
-        else { r = c; g = 0; b = x; }
+        const int hi = static_cast<int>(h);
+        const double rgb[6][3] = {
+            {c, x, 0}, // h < 1
+            {x, c, 0}, // h < 2
+            {0, c, x}, // h < 3
+            {0, x, c}, // h < 4
+            {x, 0, c}, // h < 5
+            {c, 0, x}  // h >= 5
+        };
 
         return Color(
-            static_cast<unsigned char>((r + m) * 255),
-            static_cast<unsigned char>((g + m) * 255),
-            static_cast<unsigned char>((b + m) * 255),
+            static_cast<unsigned char>((rgb[hi][0] + m) * 255),
+            static_cast<unsigned char>((rgb[hi][1] + m) * 255),
+            static_cast<unsigned char>((rgb[hi][2] + m) * 255),
             a
         );
     }
@@ -924,27 +926,81 @@ namespace KTLib
     // From Kelvin (°K)
     Color Color::FromTemp(double kelvin)
     {
-        double temp = kelvin / 100;
-        double r, g, b;
+        // Clamp to physically meaningful range
+        kelvin = std::clamp(kelvin, 1000.0, 40000.0);
 
-        if (temp <= 66)
-            r = 255;
+        // Calculate CIE 1931 xy chromaticity coordinates from CCT
+        double x;
+        if (kelvin <= 4000)
+        {
+            const double c1 = -0.2661239e9;
+            const double c2 = -0.2343589e6;
+            const double c3 = 0.8776956e3;
+            x = ((c1 / kelvin + c2) / kelvin + c3) / kelvin + 0.179910;
+        }
         else
-            r = std::clamp(329.698727446 * std::pow(temp - 60, -0.1332047592), 0.0, 255.0);
+        {
+            const double c1 = -3.0258469e9;
+            const double c2 = 2.1070379e6;
+            const double c3 = 0.2226347e3;
+            x = ((c1 / kelvin + c2) / kelvin + c3) / kelvin + 0.240390;
+        }
 
-        if (temp <= 66)
-            g = std::clamp(99.4708025861 * std::log(static_cast<float>(temp)) - 161.1195681661, 0.0, 255.0);
-        else
-            g = std::clamp(288.1221695283 * std::pow(temp - 60, -0.0755148492), 0.0, 255.0);
+        // Calculate y and convert to XYZ
+        double y = -3.000 * x * x + 2.870 * x - 0.275;
+        double Y = 1.0;
+        double X = (Y / y) * x;
+        double Z = (Y / y) * (1 - x - y);
 
-        if (temp >= 66)
-            b = 255;
-        else if (temp <= 19)
-            b = 0;
-        else
-            b = std::clamp(138.5177312231 * std::log(static_cast<float>(temp - 10)) - 305.0447927307, 0.0, 255.0);
+        return FromXYZ_D65(X, Y, Z);
+    }
 
-        return Color(static_cast<unsigned char>(r), static_cast<unsigned char>(g), static_cast<unsigned char>(b));
+    double Color::ToTemp() const
+    {
+        // Convert to xy chromaticity
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+        double sum = x + y + z;
+        x /= sum;
+        y /= sum;
+
+        // McCamy's approximation
+        double n = (x - 0.3320) / (0.1858 - y);
+        return 449.0 * pow(n, 3) + 3525.0 * pow(n, 2) + 6823.3 * n + 5520.33;
+    }
+
+    void Color::ShiftTemp(double amount)
+    {
+        double currentTemp = ToTemp();
+        *this = FromTemp(currentTemp + amount);
+    }
+
+    double Color::ToDuv() const
+    {
+        // Convert to xy chromaticity
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+        double sum = x + y + z;
+        x /= sum;
+        y /= sum;
+
+        // Convert to uv coordinates
+        double denom = -2.0 * x + 12.0 * y + 3.0;
+        double u = (4.0 * x) / denom;
+        double v = (6.0 * y) / denom;
+
+        // Calculate distance
+        double Lfp = std::sqrt((u - 0.292) * (u - 0.292) + (v - 0.24) * (v - 0.24));
+        double a = std::acos((u - 0.292) / Lfp);
+
+        // Polynomial coefficients for Planckian locus
+        static const double k[] = {-0.471106, 1.925865, -2.4243787, 1.5317403, -0.5179722, 0.0893944, -0.00616793};
+
+        // Calculate Planckian locus distance using Horner's method
+        double Lbb = k[6];
+        for(int i = 5; i >= 0; --i) Lbb = Lbb * a + k[i];
+
+        return Lfp - Lbb;
     }
     #pragma endregion
 
@@ -1008,51 +1064,29 @@ namespace KTLib
     #pragma endregion
 
     #pragma region Color Manipulation
-    void Color::ShiftHue(double degrees)
+    void Color::ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, bool isHue)
     {
-        double h, s, l;
-        ToHSL(h, s, l);
-        h+= degrees;
-        h = fmod(h, 360);
-        if (h < 0) h += 360;
-        *this = FromHSL(h, s, l);
+        double v1, v2, v3;
+        (color->*toFunc)(v1, v2, v3);
+        double* components[] = {&v1, &v2, &v3};
+
+        if (isHue) *components[componentIndex] = std::fmod(*components[componentIndex] + amount + 360.0, 360.0);
+        else *components[componentIndex] = std::clamp(*components[componentIndex] + amount/100.0, 0.0, 1.0);
+
+        *color = fromFunc(v1, v2, v3, color->a);
     }
 
-    void Color::ShiftSaturation(double amount)
-    {
-        double h, s, l;
-        ToHSL(h, s, l);
-        s += amount/100.0;
-        s = std::clamp(s, 0.0, 1.0);
-        *this = FromHSL(h, s, l);
-    }
+    void Color::ShiftHue(double degrees) { ShiftColorComponent(this, degrees, &Color::ToHSL, &Color::FromHSL, 0, true); }
 
-    void Color::ShiftLightness(double amount)
-    {
-        double h, s, l;
-        ToHSL(h, s, l);
-        l += amount/100.0;
-        l = std::clamp(l, 0.0, 1.0);
-        *this = FromHSL(h, s, l);
-    }
+    void Color::ShiftSaturation(double amount) { ShiftColorComponent(this, amount, &Color::ToHSL, &Color::FromHSL, 1); }
 
-    void Color::ShiftValue(double amount)
-    {
-        double h, s, v;
-        ToHSV(h, s, v);
-        v += amount/100.0;
-        v = std::clamp(v, 0.0, 1.0);
-        *this = FromHSV(h, s, v);
-    }
+    void Color::ShiftLightness(double amount) { ShiftColorComponent(this, amount, &Color::ToHSL, &Color::FromHSL, 2); }
 
-    void Color::ShiftIntensity(double amount)
-    {
-        double h, s, i;
-        ToHSI(h, s, i);
-        i += amount/100.0;
-        i = std::clamp(i, 0.0, 1.0);
-        *this = FromHSI(h, s, i);
-    }
+    void Color::ShiftValue(double amount) { ShiftColorComponent(this, amount, &Color::ToHSV, &Color::FromHSV, 2); }
+
+    void Color::ShiftIntensity(double amount) { ShiftColorComponent(this, amount, &Color::ToHSI, &Color::FromHSI, 2); }
+
+    void Color::Complement() { this->ShiftHue(180); }
 
     void Color::ShiftWhiteLevel(double amount)
     {
@@ -1108,8 +1142,6 @@ namespace KTLib
         *this *= contrastMatrix;
         *this += offsetMatrix;
     }
-
-    void Color::Complement() { this->ShiftHue(180); }
 
     void Color::Grayscale()
     {
@@ -1815,8 +1847,6 @@ extern "C"
         n[15] = '\0';
     }
 
-    COLOR_API Color* ColorFromTemp(double kelvin) { return new Color(Color::FromTemp(kelvin)); }
-
     COLOR_API void ColorToHex(Color* color, char* a, char* r, char* g, char* b)
     {
         std::string aStr, rStr, gStr, bStr;
@@ -1887,6 +1917,18 @@ extern "C"
         color->ToLuv(*L, *u, *v);
         *a = color->a;
     }
+
+    COLOR_API Color* ColorFromTemp(double kelvin) { return new Color(Color::FromTemp(kelvin)); }
+    COLOR_API double ColorToTemp(Color* color)
+    {
+        return color->ToTemp();
+    }
+
+    COLOR_API double ColorToDuv(Color* color)
+    {
+        return color->ToDuv();
+    }
+
     #pragma endregion
 
     #pragma region Color Scheme Generation

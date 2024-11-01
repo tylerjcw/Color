@@ -483,6 +483,14 @@ namespace KTLib
             void ToNCol(std::string& n, double& c, double& l) const;
             static Color FromNCol(const std::string& n, double c, double l, int a);
 
+            // CCT
+            double ToTemp() const;
+            static Color FromTemp(double temp);
+            void ShiftTemp(double amount);
+
+            //Duv
+            double ToDuv() const;
+
             // Color Scheme Generation
             static std::vector<Color> Monochromatic(const Color* input, int count);
             static std::vector<Color> Analogous(const Color* input, double angle = 30, int count = 3);
@@ -498,6 +506,7 @@ namespace KTLib
             static Color Multiply(const Color& color1, const Color& color2);
             static Color Overlay(const Color& color1, const Color& color2);
 
+            static void ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, bool isHue = false);
             void ShiftHue(double degrees);
             void ShiftSaturation(double amount);
             void ShiftLightness(double amount);
@@ -515,7 +524,6 @@ namespace KTLib
             void Polaroid(double factor);
             double GetLuminance() const;
             double GetContrast(const Color& other) const;
-            static Color FromTemp(double kelvin);
 
             // Utility
             enum class AccessibilityLevel
