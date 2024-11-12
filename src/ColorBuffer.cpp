@@ -1067,8 +1067,22 @@ namespace KTLib
     void ColorBuffer::Resize(int newWidth, int newHeight, int resizeImage = 1, Color fillColor = Color::Black())
     {
         resizeImage = (resizeImage != 0) ? true : false;
-        if (newWidth <= 0 || newHeight <= 0)
+
+        // Calculate dimensions preserving aspect ratio if only one dimension provided
+        if (newWidth > 0 && newHeight <= 0)
+        {
+            double ratio = static_cast<double>(m_height) / m_width;
+            newHeight = static_cast<int>(newWidth * ratio);
+        }
+        else if (newHeight > 0 && newWidth <= 0)
+        {
+            double ratio = static_cast<double>(m_width) / m_height;
+            newWidth = static_cast<int>(newHeight * ratio);
+        }
+        else if (newWidth <= 0 || newHeight <= 0)
+        {
             return;
+        }
 
         std::vector<Color> newColors(newWidth * newHeight, fillColor);
 
@@ -1326,6 +1340,24 @@ namespace KTLib
         ReleaseDC(NULL, hdc);
 
         return colorBuffer;
+    }
+
+    void ColorBuffer::Draw(HWND hwnd, int x, int y) const
+    {
+        int width = this->GetWidth();
+        int height = this->GetHeight();
+        HBITMAP hBitmap = this->ToHBITMAP(width, height); // Explicitly pass dimensions
+        HDC hdcWindow = GetDC(hwnd);
+        HDC hdcMemory = CreateCompatibleDC(hdcWindow);
+
+        HBITMAP hOldBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmap);
+
+        BitBlt(hdcWindow, x, y, width, height, hdcMemory, 0, 0, SRCCOPY);
+
+        SelectObject(hdcMemory, hOldBitmap);
+        DeleteDC(hdcMemory);
+        ReleaseDC(hwnd, hdcWindow);
+        DeleteObject(hBitmap);
     }
     #pragma endregion
 }

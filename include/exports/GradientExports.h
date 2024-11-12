@@ -58,5 +58,6 @@ extern "C"
     GRADIENT_API const char* GradientSerialize(Gradient* gradient);
     GRADIENT_API Gradient* GradientDeserialize(const char* data);
     GRADIENT_API HBITMAP GradientCreateHBITMAP(Gradient* gradient, int width, int height);
+    GRADIENT_API void DrawGradient(Gradient* gradient, HWND hwnd, int x, int y, int width, int height);
     #pragma endregion
 }

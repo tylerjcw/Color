@@ -452,9 +452,9 @@ namespace KTLib
         };
 
         return Color(
-            static_cast<unsigned char>((rgb[hi][0] + m) * 255),
-            static_cast<unsigned char>((rgb[hi][1] + m) * 255),
-            static_cast<unsigned char>((rgb[hi][2] + m) * 255),
+            static_cast<uint8_t>((rgb[hi][0] + m) * 255),
+            static_cast<uint8_t>((rgb[hi][1] + m) * 255),
+            static_cast<uint8_t>((rgb[hi][2] + m) * 255),
             a
         );
     }
@@ -507,9 +507,9 @@ namespace KTLib
         else { r = c; g = 0; b = x; }
 
         return Color(
-            static_cast<unsigned char>((r + m) * 255),
-            static_cast<unsigned char>((g + m) * 255),
-            static_cast<unsigned char>((b + m) * 255),
+            static_cast<uint8_t>((r + m) * 255),
+            static_cast<uint8_t>((g + m) * 255),
+            static_cast<uint8_t>((b + m) * 255),
             a
         );
     }
@@ -520,51 +520,76 @@ namespace KTLib
         double nR, nG, nB;
         Normalize(nR, nG, nB);
 
-        double max = std::max({nR, nG, nB});
-        double min = std::min({nR, nG, nB});
-        double chroma = max - min;
+        // Intensity: 0-255 range
+        i = (r + g + b) / 3.0;
 
-        i = (nR + nG + nB) / 3.0;
-        s = (i > 0) ? 1 - (min / i) : 0;
+        if (i > 0) {
+            double m = std::min({nR, nG, nB});
+            s = 1.0 - (m / ((nR + nG + nB) / 3.0));
+        } else {
+            s = 0;
+        }
 
-        if (chroma == 0)
+        double denominator = std::sqrt(nR*nR + nG*nG + nB*nB - nR*nG - nR*nB - nG*nB);
+        if (denominator != 0) {
+            double numerator = nR - 0.5*nG - 0.5*nB;
+            h = std::acos(numerator / denominator) * 180.0 / CONST_PI;
+            if (nB > nG) {
+                h = 360.0 - h;
+            }
+        } else {
             h = 0;
-        else if (nR >= nG && nR >= nB)
-            h = (nG - nB) / chroma;
-        else if (nG >= nR && nG >= nB)
-            h = 2 + (nB - nR) / chroma;
-        else
-            h = 4 + (nR - nG) / chroma;
+        }
 
-        h *= 60;
-        if (h < 0) h += 360;
-
-        i *= 255;
+        // Scale saturation to 0-100 range
         s *= 100;
     }
 
     Color Color::FromHSI(double h, double s, double i, int a)
     {
-        h = std::fmod(h, 360.0) / 60.0;
+        // Convert saturation back to 0-1 range
         s /= 100.0;
-        i /= 255.0;
-
-        double x = i * (1 - s);
-        double y = i * (1 + s * std::cos(h * CONST_PI / 3) / std::cos((CONST_PI / 3) - (h * CONST_PI / 3)));
-        double z = 3 * i - (x + y);
 
         double r, g, b;
-        if (h < 1) { r = y; g = z; b = x; }
-        else if (h < 2) { r = z; g = y; b = x; }
-        else if (h < 3) { r = x; g = y; b = z; }
-        else if (h < 4) { r = x; g = z; b = y; }
-        else if (h < 5) { r = z; g = x; b = y; }
-        else { r = y; g = x; b = z; }
+
+        if (h == 0) {
+            r = i + 2*i*s;
+            g = i - i*s;
+            b = i - i*s;
+        }
+        else if (h < 120) {
+            double radH = h * CONST_PI / 180.0;
+            r = i + i*s*std::cos(radH)/std::cos(CONST_PI/3 - radH);
+            g = i + i*s*(1 - std::cos(radH)/std::cos(CONST_PI/3 - radH));
+            b = i - i*s;
+        }
+        else if (h == 120) {
+            r = i - i*s;
+            g = i + 2*i*s;
+            b = i - i*s;
+        }
+        else if (h < 240) {
+            double radH = h * CONST_PI / 180.0;
+            r = i - i*s;
+            g = i + i*s*std::cos(radH - 2*CONST_PI/3)/std::cos(CONST_PI - radH);
+            b = i + i*s*(1 - std::cos(radH - 2*CONST_PI/3)/std::cos(CONST_PI - radH));
+        }
+        else if (h == 240) {
+            r = i - i*s;
+            g = i - i*s;
+            b = i + 2*i*s;
+        }
+        else { // 240 < h < 360
+            double radH = h * CONST_PI / 180.0;
+            r = i + i*s*(1 - std::cos(radH - 4*CONST_PI/3)/std::cos(5*CONST_PI/3 - radH));
+            g = i - i*s;
+            b = i + i*s*std::cos(radH - 4*CONST_PI/3)/std::cos(5*CONST_PI/3 - radH);
+        }
 
         return Color(
-            static_cast<unsigned char>(r * 255),
-            static_cast<unsigned char>(g * 255),
-            static_cast<unsigned char>(b * 255),
+            static_cast<int>(std::clamp(r, 0.0, 255.0)),
+            static_cast<int>(std::clamp(g, 0.0, 255.0)),
+            static_cast<int>(std::clamp(b, 0.0, 255.0)),
             a
         );
     }
@@ -619,9 +644,9 @@ namespace KTLib
         else { r = c; g = 0; b_ = x; }
 
         return Color(
-            static_cast<unsigned char>((r + m) * 255),
-            static_cast<unsigned char>((g + m) * 255),
-            static_cast<unsigned char>((b_ + m) * 255),
+            static_cast<uint8_t>((r + m) * 255),
+            static_cast<uint8_t>((g + m) * 255),
+            static_cast<uint8_t>((b_ + m) * 255),
             a
         );
     }
@@ -818,9 +843,9 @@ namespace KTLib
         double b = std::clamp(y + 1.7710 * cb + 0.0000 * cr, 0.0, 1.0);
 
         return Color(
-            static_cast<unsigned char>(std::clamp(r * 255.0, 0.0, 255.0)),
-            static_cast<unsigned char>(std::clamp(g * 255.0, 0.0, 255.0)),
-            static_cast<unsigned char>(std::clamp(b * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(r * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(g * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(b * 255.0, 0.0, 255.0)),
             a
         );
     }

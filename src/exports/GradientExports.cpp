@@ -81,5 +81,7 @@ extern "C"
     }
 
     GRADIENT_API HBITMAP GradientCreateHBITMAP(Gradient* gradient, int width, int height) { return gradient->CreateHBITMAP(width, height); }
+
+    GRADIENT_API void DrawGradient(Gradient* gradient, HWND hwnd, int x, int y, int width, int height) { gradient->Draw(hwnd, x, y, width, height); }
     #pragma endregion
 }

@@ -22,6 +22,7 @@ namespace KTLib
             void Scale(double scale);
             static ColorBuffer* FromHBITMAP(HBITMAP hBitmap, int targetWidth = 0, int targetHeight = 0);
             HBITMAP ToHBITMAP(int targetWidth = 0, int targetHeight = 0) const;
+            void Draw(HWND hwnd, int x, int y) const;
 
             int GetWidth() const { return m_width; }
             int GetHeight() const { return m_height; }

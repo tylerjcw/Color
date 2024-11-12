@@ -282,8 +282,187 @@ extern "C"
     COLOR_API void SetColorBlue(Color* color, int b) { color->SetBlue(b); }
     COLOR_API void ColorNormalize(Color* color, double* r, double* g, double* b) { color->Normalize(*r, *g, *b); }
 
-    COLOR_API Color* CreateColorFromRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) { return new Color(r, g, b, a); }
-    COLOR_API Color* CreateColorFromInt(unsigned int argb) { return new Color(argb); }
+    COLOR_API Color* CreateColorFromRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return new Color(r, g, b, a); }
+    COLOR_API Color* CreateColorFromInt(uint32_t argb)
+    {
+        if (argb <= 0xFFFFFF) argb |= 0xFF000000;
+        return new Color(argb);
+    }
+
+    COLOR_API Color* CreateColorFromHexString(const char* hex)
+    {
+        std::string hexStr(hex);
+        // Remove 0x or # if present
+        if (hexStr.substr(0, 2) == "0x") hexStr = hexStr.substr(2);
+        else if (hexStr[0] == '#') hexStr = hexStr.substr(1);
+
+        // Handle 6 or 8 character hex strings
+        if (hexStr.length() == 6)
+            hexStr = "FF" + hexStr;
+
+        return new Color(std::stoul(hexStr, nullptr, 16));
+    }
+
+    COLOR_API Color* CreateColorFromName(const char* name)
+    {
+        std::string colorName(name);
+        std::transform(colorName.begin(), colorName.end(), colorName.begin(), ::tolower);
+
+        if (colorName == "aliceblue") return new Color(Color::AliceBlue());
+        if (colorName == "antiquewhite") return new Color(Color::AntiqueWhite());
+        if (colorName == "aqua") return new Color(Color::Aqua());
+        if (colorName == "aquamarine") return new Color(Color::Aquamarine());
+        if (colorName == "azure") return new Color(Color::Azure());
+        if (colorName == "beige") return new Color(Color::Beige());
+        if (colorName == "bisque") return new Color(Color::Bisque());
+        if (colorName == "black") return new Color(Color::Black());
+        if (colorName == "blacktransparent") return new Color(Color::BlackTransparent());
+        if (colorName == "blanchedalmond") return new Color(Color::BlanchedAlmond());
+        if (colorName == "blue") return new Color(Color::Blue());
+        if (colorName == "blueviolet") return new Color(Color::BlueViolet());
+        if (colorName == "brown") return new Color(Color::Brown());
+        if (colorName == "burlywood") return new Color(Color::BurlyWood());
+        if (colorName == "cadetblue") return new Color(Color::CadetBlue());
+        if (colorName == "chartreuse") return new Color(Color::Chartreuse());
+        if (colorName == "chocolate") return new Color(Color::Chocolate());
+        if (colorName == "coral") return new Color(Color::Coral());
+        if (colorName == "cornflowerblue") return new Color(Color::CornflowerBlue());
+        if (colorName == "cornsilk") return new Color(Color::Cornsilk());
+        if (colorName == "crimson") return new Color(Color::Crimson());
+        if (colorName == "cyan") return new Color(Color::Cyan());
+        if (colorName == "darkblue") return new Color(Color::DarkBlue());
+        if (colorName == "darkcyan") return new Color(Color::DarkCyan());
+        if (colorName == "darkgoldenrod") return new Color(Color::DarkGoldenRod());
+        if (colorName == "darkgray") return new Color(Color::DarkGray());
+        if (colorName == "darkgrey") return new Color(Color::DarkGrey());
+        if (colorName == "darkgreen") return new Color(Color::DarkGreen());
+        if (colorName == "darkkhaki") return new Color(Color::DarkKhaki());
+        if (colorName == "darkmagenta") return new Color(Color::DarkMagenta());
+        if (colorName == "darkolivegreen") return new Color(Color::DarkOliveGreen());
+        if (colorName == "darkorange") return new Color(Color::DarkOrange());
+        if (colorName == "darkorchid") return new Color(Color::DarkOrchid());
+        if (colorName == "darkred") return new Color(Color::DarkRed());
+        if (colorName == "darksalmon") return new Color(Color::DarkSalmon());
+        if (colorName == "darkseagreen") return new Color(Color::DarkSeaGreen());
+        if (colorName == "darkslateblue") return new Color(Color::DarkSlateBlue());
+        if (colorName == "darkslategray") return new Color(Color::DarkSlateGray());
+        if (colorName == "darkslategrey") return new Color(Color::DarkSlateGrey());
+        if (colorName == "darkturquoise") return new Color(Color::DarkTurquoise());
+        if (colorName == "darkviolet") return new Color(Color::DarkViolet());
+        if (colorName == "deeppink") return new Color(Color::DeepPink());
+        if (colorName == "deepskyblue") return new Color(Color::DeepSkyBlue());
+        if (colorName == "dimgray") return new Color(Color::DimGray());
+        if (colorName == "dimgrey") return new Color(Color::DimGrey());
+        if (colorName == "dodgerblue") return new Color(Color::DodgerBlue());
+        if (colorName == "firebrick") return new Color(Color::FireBrick());
+        if (colorName == "floralwhite") return new Color(Color::FloralWhite());
+        if (colorName == "forestgreen") return new Color(Color::ForestGreen());
+        if (colorName == "fuchsia") return new Color(Color::Fuchsia());
+        if (colorName == "gainsboro") return new Color(Color::Gainsboro());
+        if (colorName == "ghostwhite") return new Color(Color::GhostWhite());
+        if (colorName == "gold") return new Color(Color::Gold());
+        if (colorName == "goldenrod") return new Color(Color::GoldenRod());
+        if (colorName == "gray") return new Color(Color::Gray());
+        if (colorName == "grey") return new Color(Color::Grey());
+        if (colorName == "green") return new Color(Color::Green());
+        if (colorName == "greenyellow") return new Color(Color::GreenYellow());
+        if (colorName == "honeydew") return new Color(Color::Honeydew());
+        if (colorName == "hotpink") return new Color(Color::HotPink());
+        if (colorName == "indianred") return new Color(Color::IndianRed());
+        if (colorName == "indigo") return new Color(Color::Indigo());
+        if (colorName == "ivory") return new Color(Color::Ivory());
+        if (colorName == "khaki") return new Color(Color::Khaki());
+        if (colorName == "lavender") return new Color(Color::Lavender());
+        if (colorName == "lavenderblush") return new Color(Color::LavenderBlush());
+        if (colorName == "lawngreen") return new Color(Color::LawnGreen());
+        if (colorName == "lemonchiffon") return new Color(Color::LemonChiffon());
+        if (colorName == "lightblue") return new Color(Color::LightBlue());
+        if (colorName == "lightcoral") return new Color(Color::LightCoral());
+        if (colorName == "lightcyan") return new Color(Color::LightCyan());
+        if (colorName == "lightgoldenrodyellow") return new Color(Color::LightGoldenrodYellow());
+        if (colorName == "lightgray") return new Color(Color::LightGray());
+        if (colorName == "lightgrey") return new Color(Color::LightGray());
+        if (colorName == "lightgreen") return new Color(Color::LightGreen());
+        if (colorName == "lightpink") return new Color(Color::LightPink());
+        if (colorName == "lightsalmon") return new Color(Color::LightSalmon());
+        if (colorName == "lightseagreen") return new Color(Color::LightSeaGreen());
+        if (colorName == "lightskyblue") return new Color(Color::LightSkyBlue());
+        if (colorName == "lightslategray") return new Color(Color::LightSlateGray());
+        if (colorName == "lightslategrey") return new Color(Color::LightSlateGrey());
+        if (colorName == "lightsteelblue") return new Color(Color::LightSteelBlue());
+        if (colorName == "lightyellow") return new Color(Color::LightYellow());
+        if (colorName == "lime") return new Color(Color::Lime());
+        if (colorName == "limegreen") return new Color(Color::LimeGreen());
+        if (colorName == "linen") return new Color(Color::Linen());
+        if (colorName == "magenta") return new Color(Color::Magenta());
+        if (colorName == "maroon") return new Color(Color::Maroon());
+        if (colorName == "mediumaquamarine") return new Color(Color::MediumAquamarine());
+        if (colorName == "mediumblue") return new Color(Color::MediumBlue());
+        if (colorName == "mediumorchid") return new Color(Color::MediumOrchid());
+        if (colorName == "mediumpurple") return new Color(Color::MediumPurple());
+        if (colorName == "mediumseagreen") return new Color(Color::MediumSeaGreen());
+        if (colorName == "mediumslategray") return new Color(Color::MediumSlateGray());
+        if (colorName == "mediumslategrey") return new Color(Color::MediumSlateGrey());
+        if (colorName == "mediumslateblue") return new Color(Color::MediumSlateBlue());
+        if (colorName == "mediumspringgreen") return new Color(Color::MediumSpringGreen());
+        if (colorName == "mediumturquoise") return new Color(Color::MediumTurquoise());
+        if (colorName == "mediumvioletred") return new Color(Color::MediumVioletRed());
+        if (colorName == "midnightblue") return new Color(Color::MidnightBlue());
+        if (colorName == "mintcream") return new Color(Color::MintCream());
+        if (colorName == "mistyrose") return new Color(Color::MistyRose());
+        if (colorName == "moccasin") return new Color(Color::Moccasin());
+        if (colorName == "navajowhite") return new Color(Color::NavajoWhite());
+        if (colorName == "navy") return new Color(Color::Navy());
+        if (colorName == "oldlace") return new Color(Color::OldLace());
+        if (colorName == "olive") return new Color(Color::Olive());
+        if (colorName == "olivedrab") return new Color(Color::OliveDrab());
+        if (colorName == "orange") return new Color(Color::Orange());
+        if (colorName == "orangered") return new Color(Color::OrangeRed());
+        if (colorName == "orchid") return new Color(Color::Orchid());
+        if (colorName == "palegoldenrod") return new Color(Color::PaleGoldenrod());
+        if (colorName == "palegreen") return new Color(Color::PaleGreen());
+        if (colorName == "paleturquoise") return new Color(Color::PaleTurquoise());
+        if (colorName == "palevioletred") return new Color(Color::PaleVioletRed());
+        if (colorName == "papayawhip") return new Color(Color::PapayaWhip());
+        if (colorName == "peachpuff") return new Color(Color::PeachPuff());
+        if (colorName == "peru") return new Color(Color::Peru());
+        if (colorName == "pink") return new Color(Color::Pink());
+        if (colorName == "plum") return new Color(Color::Plum());
+        if (colorName == "powderblue") return new Color(Color::PowderBlue());
+        if (colorName == "purple") return new Color(Color::Purple());
+        if (colorName == "rebeccapurple") return new Color(Color::RebeccaPurple());
+        if (colorName == "red") return new Color(Color::Red());
+        if (colorName == "rosybrown") return new Color(Color::RosyBrown());
+        if (colorName == "royalblue") return new Color(Color::RoyalBlue());
+        if (colorName == "saddlebrown") return new Color(Color::SaddleBrown());
+        if (colorName == "salmon") return new Color(Color::Salmon());
+        if (colorName == "sandybrown") return new Color(Color::SandyBrown());
+        if (colorName == "seagreen") return new Color(Color::SeaGreen());
+        if (colorName == "sienna") return new Color(Color::Sienna());
+        if (colorName == "silver") return new Color(Color::Silver());
+        if (colorName == "skyblue") return new Color(Color::SkyBlue());
+        if (colorName == "slateblue") return new Color(Color::SlateBlue());
+        if (colorName == "slategray") return new Color(Color::SlateGray());
+        if (colorName == "slategrey") return new Color(Color::SlateGrey());
+        if (colorName == "snow") return new Color(Color::Snow());
+        if (colorName == "springgreen") return new Color(Color::SpringGreen());
+        if (colorName == "steelblue") return new Color(Color::SteelBlue());
+        if (colorName == "tan") return new Color(Color::Tan());
+        if (colorName == "teal") return new Color(Color::Teal());
+        if (colorName == "thistle") return new Color(Color::Thistle());
+        if (colorName == "tomato") return new Color(Color::Tomato());
+        if (colorName == "transparent") return new Color(Color::Transparent());
+        if (colorName == "turquoise") return new Color(Color::Turquoise());
+        if (colorName == "violet") return new Color(Color::Violet());
+        if (colorName == "wheat") return new Color(Color::Wheat());
+        if (colorName == "white") return new Color(Color::White());
+        if (colorName == "whitesmoke") return new Color(Color::WhiteSmoke());
+        if (colorName == "whitetransparent") return new Color(Color::WhiteTransparent());
+        if (colorName == "yellow") return new Color(Color::Yellow());
+        if (colorName == "yellowgreen") return new Color(Color::YellowGreen());
+        return nullptr;
+    }
+
     COLOR_API void DeleteColor(Color* color) { delete color; }
 
     COLOR_API void ColorToString(Color* color, const char* type, const char* format, char* fullStr)
@@ -301,8 +480,8 @@ extern "C"
         free(colors);
     }
 
-    typedef void (*PixelCallback)(int x, int y, unsigned int color, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
-    COLOR_API void ProcessImageBuffer(unsigned char* buffer, int width, int height, int stride, PixelCallback callback)
+    typedef void (*PixelCallback)(int x, int y, unsigned int color, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    COLOR_API void ProcessImageBuffer(uint8_t* buffer, int width, int height, int stride, PixelCallback callback)
     {
         int totalPixels = width * height;
         for (int i = 0; i < totalPixels; ++i)
@@ -311,10 +490,10 @@ extern "C"
             int y = i / width;
             int index = y * stride + x * 4;
 
-            unsigned char b = buffer[index];
-            unsigned char g = buffer[index + 1];
-            unsigned char r = buffer[index + 2];
-            unsigned char a = buffer[index + 3];
+            uint8_t b = buffer[index];
+            uint8_t g = buffer[index + 1];
+            uint8_t r = buffer[index + 2];
+            uint8_t a = buffer[index + 3];
 
             unsigned int color = (a << 24) | (r << 16) | (g << 8) | b;
 

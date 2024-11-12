@@ -220,6 +220,7 @@ namespace KTLib
             static inline Color DarkCyan()             { return Color(0xFF008B8B); }
             static inline Color DarkGoldenRod()        { return Color(0xFFB8860B); }
             static inline Color DarkGray()             { return Color(0xFFA9A9A9); }
+            static inline Color DarkGrey()             { return Color(0xFFA9A9A9); }
             static inline Color DarkGreen()            { return Color(0xFF006400); }
             static inline Color DarkKhaki()            { return Color(0xFFBDB76B); }
             static inline Color DarkMagenta()          { return Color(0xFF8B008B); }
@@ -231,11 +232,13 @@ namespace KTLib
             static inline Color DarkSeaGreen()         { return Color(0xFF8FBC8F); }
             static inline Color DarkSlateBlue()        { return Color(0xFF483D8B); }
             static inline Color DarkSlateGray()        { return Color(0xFF2F4F4F); }
+            static inline Color DarkSlateGrey()        { return Color(0xFF2F4F4F); }
             static inline Color DarkTurquoise()        { return Color(0xFF00CED1); }
             static inline Color DarkViolet()           { return Color(0xFF9400D3); }
             static inline Color DeepPink()             { return Color(0xFFFF1493); }
             static inline Color DeepSkyBlue()          { return Color(0xFF00BFFF); }
             static inline Color DimGray()              { return Color(0xFF696969); }
+            static inline Color DimGrey()              { return Color(0xFF696969); }
             static inline Color DodgerBlue()           { return Color(0xFF1E90FF); }
             static inline Color FireBrick()            { return Color(0xFFB22222); }
             static inline Color FloralWhite()          { return Color(0xFFFFFAF0); }
@@ -246,6 +249,7 @@ namespace KTLib
             static inline Color Gold()                 { return Color(0xFFFFD700); }
             static inline Color GoldenRod()            { return Color(0xFFDAA520); }
             static inline Color Gray()                 { return Color(0xFF808080); }
+            static inline Color Grey()                 { return Color(0xFF808080); }
             static inline Color Green()                { return Color(0xFF008000); }
             static inline Color GreenYellow()          { return Color(0xFFADFF2F); }
             static inline Color Honeydew()             { return Color(0xFFF0FFF0); }
@@ -270,6 +274,7 @@ namespace KTLib
             static inline Color LightSeaGreen()        { return Color(0xFF20B2AA); }
             static inline Color LightSkyBlue()         { return Color(0xFF87CEFA); }
             static inline Color LightSlateGray()       { return Color(0xFF778899); }
+            static inline Color LightSlateGrey()       { return Color(0xFF778899); }
             static inline Color LightSteelBlue()       { return Color(0xFFB0C4DE); }
             static inline Color LightYellow()          { return Color(0xFFFFFFE0); }
             static inline Color Lime()                 { return Color(0xFF00FF00); }
@@ -281,6 +286,8 @@ namespace KTLib
             static inline Color MediumBlue()           { return Color(0xFF0000CD); }
             static inline Color MediumOrchid()         { return Color(0xFFBA55D3); }
             static inline Color MediumPurple()         { return Color(0xFF9370DB); }
+            static inline Color MediumSlateGray()      { return Color(0xFF7B68EE); }
+            static inline Color MediumSlateGrey()      { return Color(0xFF7B68EE); }
             static inline Color MediumSeaGreen()       { return Color(0xFF3CB371); }
             static inline Color MediumSlateBlue()      { return Color(0xFF7B68EE); }
             static inline Color MediumSpringGreen()    { return Color(0xFF00FA9A); }
@@ -323,6 +330,7 @@ namespace KTLib
             static inline Color SkyBlue()              { return Color(0xFF87CEEB); }
             static inline Color SlateBlue()            { return Color(0xFF6A5ACD); }
             static inline Color SlateGray()            { return Color(0xFF708090); }
+            static inline Color SlateGrey()            { return Color(0xFF708090); }
             static inline Color Snow()                 { return Color(0xFFFFFAFA); }
             static inline Color SpringGreen()          { return Color(0xFF00FF7F); }
             static inline Color SteelBlue()            { return Color(0xFF4682B4); }

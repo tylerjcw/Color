@@ -391,32 +391,14 @@ namespace KTLib
 
     HBITMAP Gradient::CreateHBITMAP(int width, int height) const
     {
-        HDC screenDC = GetDC(NULL);
-        HDC memDC = CreateCompatibleDC(screenDC);
+        ColorBuffer buffer(*this, width, height);
+        return buffer.ToHBITMAP();
+    }
 
-        BITMAPINFO bmi;
-        ZeroMemory(&bmi, sizeof(BITMAPINFO));
-        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = width;
-        bmi.bmiHeader.biHeight = -height;
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB;
-        bmi.bmiHeader.biSizeImage = width * height * 4;
-
-        void* bits = nullptr;
-        HBITMAP hBitmap = CreateDIBSection(screenDC, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
-
-        if (hBitmap)
-        {
-            ColorBuffer buffer(*this, width, height);
-            for (int i = 0; i < width * height; i++) static_cast<unsigned int*>(bits)[i] = buffer[i].ToInt(0);
-        }
-
-        DeleteDC(memDC);
-        ReleaseDC(NULL, screenDC);
-
-        return hBitmap;
+    void Gradient::Draw(HWND hwnd, int x, int y, int width, int height) const
+    {
+        ColorBuffer buffer(*this, width, height);
+        buffer.Draw(hwnd, x, y);
     }
     #pragma endregion
 }

@@ -111,27 +111,7 @@ class GradientGui extends Gui
         }
 
         this.grad.ShiftHue(1)
-        this.Redraw()
-    }
-
-    Redraw()
-    {
-        static SRCCOPY := 0x00CC0020
-
-        ; Create new bitmap with current dimensions
-        hdc := DllCall("GetDC", "Ptr", this.Hwnd)
-        mdc := DllCall("CreateCompatibleDC", "Ptr", hdc)
-        hBitmap := this.grad.ToHBITMAP(this.Width, this.Height)
-        DllCall("SelectObject", "Ptr", mdc, "Ptr", hBitmap)
-
-        ; Copy to window
-        DllCall("BitBlt", "Ptr", hdc, "Int", 0, "Int", 180, "Int", this.Width, "Int", this.Height
-                        , "Ptr", mdc, "Int", 0, "Int", 0, "UInt", SRCCOPY)
-
-        ; Cleanup
-        DllCall("DeleteDC", "Ptr", mdc)
-        DllCall("DeleteObject", "Ptr", hBitmap)
-        DllCall("ReleaseDC", "Ptr", this.Hwnd, "Ptr", hdc)
+        this.grad.Draw(this.Hwnd, 0, 180, this.Width, this.Height)
     }
 }
 

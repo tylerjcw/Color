@@ -33,6 +33,7 @@ extern "C"
     COLOR_API Color* CreateDarkCyanColor() { return new Color(Color::DarkCyan()); }
     COLOR_API Color* CreateDarkGoldenrodColor() { return new Color(Color::DarkGoldenRod()); }
     COLOR_API Color* CreateDarkGrayColor() { return new Color(Color::DarkGray()); }
+    COLOR_API Color* CreateDarkGreyColor() { return new Color(Color::DarkGrey()); }
     COLOR_API Color* CreateDarkGreenColor() { return new Color(Color::DarkGreen()); }
     COLOR_API Color* CreateDarkKhakiColor() { return new Color(Color::DarkKhaki()); }
     COLOR_API Color* CreateDarkMagentaColor() { return new Color(Color::DarkMagenta()); }
@@ -44,11 +45,13 @@ extern "C"
     COLOR_API Color* CreateDarkSeaGreenColor() { return new Color(Color::DarkSeaGreen()); }
     COLOR_API Color* CreateDarkSlateBlueColor() { return new Color(Color::DarkSlateBlue()); }
     COLOR_API Color* CreateDarkSlateGrayColor() { return new Color(Color::DarkSlateGray()); }
+    COLOR_API Color* CreateDarkSlateGreyColor() { return new Color(Color::DarkSlateGrey()); }
     COLOR_API Color* CreateDarkTurquoiseColor() { return new Color(Color::DarkTurquoise()); }
     COLOR_API Color* CreateDarkVioletColor() { return new Color(Color::DarkViolet()); }
     COLOR_API Color* CreateDeepPinkColor() { return new Color(Color::DeepPink()); }
     COLOR_API Color* CreateDeepSkyBlueColor() { return new Color(Color::DeepSkyBlue()); }
     COLOR_API Color* CreateDimGrayColor() { return new Color(Color::DimGray()); }
+    COLOR_API Color* CreateDimGreyColor() { return new Color(Color::DimGrey()); }
     COLOR_API Color* CreateDodgerBlueColor() { return new Color(Color::DodgerBlue()); }
     COLOR_API Color* CreateFireBrickColor() { return new Color(Color::FireBrick()); }
     COLOR_API Color* CreateFloralWhiteColor() { return new Color(Color::FloralWhite()); }
@@ -59,6 +62,7 @@ extern "C"
     COLOR_API Color* CreateGoldColor() { return new Color(Color::Gold()); }
     COLOR_API Color* CreateGoldenRodColor() { return new Color(Color::GoldenRod()); }
     COLOR_API Color* CreateGrayColor() { return new Color(Color::Gray()); }
+    COLOR_API Color* CreateGreyColor() { return new Color(Color::Grey()); }
     COLOR_API Color* CreateGreenColor() { return new Color(Color::Green()); }
     COLOR_API Color* CreateGreenYellowColor() { return new Color(Color::GreenYellow()); }
     COLOR_API Color* CreateHoneydewColor() { return new Color(Color::Honeydew()); }
@@ -76,13 +80,14 @@ extern "C"
     COLOR_API Color* CreateLightCyanColor() { return new Color(Color::LightCyan()); }
     COLOR_API Color* CreateLightGoldenrodYellowColor() { return new Color(Color::LightGoldenrodYellow()); }
     COLOR_API Color* CreateLightGrayColor() { return new Color(Color::LightGray()); }
-    COLOR_API Color* CreateLightGreenColor() { return new Color(Color::LightGreen()); }
     COLOR_API Color* CreateLightGreyColor() { return new Color(Color::LightGrey()); }
+    COLOR_API Color* CreateLightGreenColor() { return new Color(Color::LightGreen()); }
     COLOR_API Color* CreateLightPinkColor() { return new Color(Color::LightPink()); }
     COLOR_API Color* CreateLightSalmonColor() { return new Color(Color::LightSalmon()); }
     COLOR_API Color* CreateLightSeaGreenColor() { return new Color(Color::LightSeaGreen()); }
     COLOR_API Color* CreateLightSkyBlueColor() { return new Color(Color::LightSkyBlue()); }
     COLOR_API Color* CreateLightSlateGrayColor() { return new Color(Color::LightSlateGray()); }
+    COLOR_API Color* CreateLightSlateGreyColor() { return new Color(Color::LightSlateGrey()); }
     COLOR_API Color* CreateLightSteelBlueColor() { return new Color(Color::LightSteelBlue()); }
     COLOR_API Color* CreateLightYellowColor() { return new Color(Color::LightYellow()); }
     COLOR_API Color* CreateLimeColor() { return new Color(Color::Lime()); }
@@ -96,6 +101,8 @@ extern "C"
     COLOR_API Color* CreateMediumPurpleColor() { return new Color(Color::MediumPurple()); }
     COLOR_API Color* CreateMediumSeaGreenColor() { return new Color(Color::MediumSeaGreen()); }
     COLOR_API Color* CreateMediumSlateBlueColor() { return new Color(Color::MediumSlateBlue()); }
+    COLOR_API Color* CreateMediumSlateGrayColor() { return new Color(Color::MediumSlateGray()); }
+    COLOR_API Color* CreateMediumSlateGreyColor() { return new Color(Color::MediumSlateGrey()); }
     COLOR_API Color* CreateMediumSpringGreenColor() { return new Color(Color::MediumSpringGreen()); }
     COLOR_API Color* CreateMediumTurquoiseColor() { return new Color(Color::MediumTurquoise()); }
     COLOR_API Color* CreateMediumVioletRedColor() { return new Color(Color::MediumVioletRed()); }
@@ -136,6 +143,7 @@ extern "C"
     COLOR_API Color* CreateSkyBlueColor() { return new Color(Color::SkyBlue()); }
     COLOR_API Color* CreateSlateBlueColor() { return new Color(Color::SlateBlue()); }
     COLOR_API Color* CreateSlateGrayColor() { return new Color(Color::SlateGray()); }
+    COLOR_API Color* CreateSlateGreyColor() { return new Color(Color::SlateGrey()); }
     COLOR_API Color* CreateSnowColor() { return new Color(Color::Snow()); }
     COLOR_API Color* CreateSpringGreenColor() { return new Color(Color::SpringGreen()); }
     COLOR_API Color* CreateSteelBlueColor() { return new Color(Color::SteelBlue()); }
@@ -155,10 +163,13 @@ extern "C"
     #pragma endregion
 
     #pragma region Core Methods
-    COLOR_API Color* CreateColorObject();
-    COLOR_API void DeleteColorObject(Color* color);
-    COLOR_API Color* CreateColorFromARGB(uint32_t argb);
+    COLOR_API Color* CreateColorObject() { return new Color(); }
+    COLOR_API void DeleteColorObject(Color* color) { delete color; }
+    COLOR_API Color* CreateColorFromARGB(uint8_t argb) { return new Color(argb); }
     COLOR_API Color* CreateColorFromRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    COLOR_API Color* CreateColorFromInt(uint32_t argb);
+    COLOR_API Color* CreateColorFromHexString(const char* hex);
+    COLOR_API Color* CreateColorFromName(const char* name);
     COLOR_API uint32_t ColorToInt(Color* color, int format);
     COLOR_API void ColorNormalize(Color* color, double* r, double* g, double* b);
     #pragma endregion

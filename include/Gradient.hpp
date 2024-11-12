@@ -62,6 +62,7 @@ namespace KTLib
             std::string Serialize() const;
             static Gradient Deserialize(const std::string& data);
             HBITMAP CreateHBITMAP(int width, int height) const;
+            void Draw(HWND hwnd, int x, int y, int width, int height) const;
             void SetTotalSteps(int totalSteps) { m_totalSteps = totalSteps; processColorStops(); }
             int GetTotalSteps() const { return m_totalSteps; }
             void SetType(GradientType type) { m_type = type; processColorStops(); }

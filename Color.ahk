@@ -35,13 +35,18 @@ class Color
     {
         switch args.Length
         {
+            case 0:
+                this.Ptr := DllCall("Color\CreateColorObject", "Ptr")
             case 1:
                 if args[1] is Number
-                    this.Ptr := DllCall("Color\CreateColorFromInt", "UInt", args[1])
-                else if (args[1] is String) and Color.HasOwnProp(args[1]) and (Color.%args[1]% is Color)
-                    this.Ptr := DllCall("Color\CreateColorFromInt", "UInt", Color.%args[1]%.ToInt())
-                else
-                    throw Error("Color Constructor: Invalid Color arguments")
+                    this.Ptr := DllCall("Color\CreateColorFromInt", "UInt", args[1], "Ptr")
+                else if args[1] is String
+                {
+                    if RegExMatch(args[1], "^(0x|#)?[0-9A-Fa-f]{6,8}$")
+                        this.Ptr := DllCall("Color\CreateColorFromHexString", "AStr", args[1], "Ptr")
+                    else
+                        this.Ptr := DllCall("Color\CreateColorFromName", "AStr", args[1], "Ptr")
+                }
             case 3:
                 this.Ptr := DllCall("Color\CreateColorFromRGBA", "UChar", args[1], "UChar", args[2], "UChar", args[3], "UChar", 255, "Ptr")
             case 4:
@@ -218,6 +223,7 @@ class Color
     static DarkCyan => Color.FromPtr(DllCall("Color\CreateDarkCyanColor", "Ptr"))
     static DarkGoldenRod => Color.FromPtr(DllCall("Color\CreateDarkGoldenRodColor", "Ptr"))
     static DarkGray => Color.FromPtr(DllCall("Color\CreateDarkGrayColor", "Ptr"))
+    static DarkGrey => Color.FromPtr(DllCall("Color\CreateDarkGreyColor", "Ptr"))
     static DarkGreen => Color.FromPtr(DllCall("Color\CreateDarkGreenColor", "Ptr"))
     static DarkKhaki => Color.FromPtr(DllCall("Color\CreateDarkKhakiColor", "Ptr"))
     static DarkMagenta => Color.FromPtr(DllCall("Color\CreateDarkMagentaColor", "Ptr"))
@@ -229,11 +235,13 @@ class Color
     static DarkSeaGreen => Color.FromPtr(DllCall("Color\CreateDarkSeaGreenColor", "Ptr"))
     static DarkSlateBlue => Color.FromPtr(DllCall("Color\CreateDarkSlateBlueColor", "Ptr"))
     static DarkSlateGray => Color.FromPtr(DllCall("Color\CreateDarkSlateGrayColor", "Ptr"))
+    static DarkSlateGrey => Color.FromPtr(DllCall("Color\CreateDarkSlateGreyColor", "Ptr"))
     static DarkTurquoise => Color.FromPtr(DllCall("Color\CreateDarkTurquoiseColor", "Ptr"))
     static DarkViolet => Color.FromPtr(DllCall("Color\CreateDarkVioletColor", "Ptr"))
     static DeepPink => Color.FromPtr(DllCall("Color\CreateDeepPinkColor", "Ptr"))
     static DeepSkyBlue => Color.FromPtr(DllCall("Color\CreateDeepSkyBlueColor", "Ptr"))
     static DimGray => Color.FromPtr(DllCall("Color\CreateDimGrayColor", "Ptr"))
+    static DimGrey => Color.FromPtr(DllCall("Color\CreateDimGreyColor", "Ptr"))
     static DodgerBlue => Color.FromPtr(DllCall("Color\CreateDodgerBlueColor", "Ptr"))
     static FireBrick => Color.FromPtr(DllCall("Color\CreateFireBrickColor", "Ptr"))
     static FloralWhite => Color.FromPtr(DllCall("Color\CreateFloralWhiteColor", "Ptr"))
@@ -244,6 +252,7 @@ class Color
     static Gold => Color.FromPtr(DllCall("Color\CreateGoldColor", "Ptr"))
     static GoldenRod => Color.FromPtr(DllCall("Color\CreateGoldenRodColor", "Ptr"))
     static Gray => Color.FromPtr(DllCall("Color\CreateGrayColor", "Ptr"))
+    static Grey => Color.FromPtr(DllCall("Color\CreateGreyColor", "Ptr"))
     static Green => Color.FromPtr(DllCall("Color\CreateGreenColor", "Ptr"))
     static GreenYellow => Color.FromPtr(DllCall("Color\CreateGreenYellowColor", "Ptr"))
     static Honeydew => Color.FromPtr(DllCall("Color\CreateHoneydewColor", "Ptr"))
@@ -261,13 +270,14 @@ class Color
     static LightCyan => Color.FromPtr(DllCall("Color\CreateLightCyanColor", "Ptr"))
     static LightGoldenrodYellow => Color.FromPtr(DllCall("Color\CreateLightGoldenrodYellowColor", "Ptr"))
     static LightGray => Color.FromPtr(DllCall("Color\CreateLightGrayColor", "Ptr"))
-    static LightGreen => Color.FromPtr(DllCall("Color\CreateLightGreenColor", "Ptr"))
     static LightGrey => Color.FromPtr(DllCall("Color\CreateLightGreyColor", "Ptr"))
+    static LightGreen => Color.FromPtr(DllCall("Color\CreateLightGreenColor", "Ptr"))
     static LightPink => Color.FromPtr(DllCall("Color\CreateLightPinkColor", "Ptr"))
     static LightSalmon => Color.FromPtr(DllCall("Color\CreateLightSalmonColor", "Ptr"))
     static LightSeaGreen => Color.FromPtr(DllCall("Color\CreateLightSeaGreenColor", "Ptr"))
     static LightSkyBlue => Color.FromPtr(DllCall("Color\CreateLightSkyBlueColor", "Ptr"))
     static LightSlateGray => Color.FromPtr(DllCall("Color\CreateLightSlateGrayColor", "Ptr"))
+    static LightSlateGrey => Color.FromPtr(DllCall("Color\CreateLightSlateGreyColor", "Ptr"))
     static LightSteelBlue => Color.FromPtr(DllCall("Color\CreateLightSteelBlueColor", "Ptr"))
     static LightYellow => Color.FromPtr(DllCall("Color\CreateLightYellowColor", "Ptr"))
     static Lime => Color.FromPtr(DllCall("Color\CreateLimeColor", "Ptr"))
@@ -321,6 +331,7 @@ class Color
     static SkyBlue => Color.FromPtr(DllCall("Color\CreateSkyBlueColor", "Ptr"))
     static SlateBlue => Color.FromPtr(DllCall("Color\CreateSlateBlueColor", "Ptr"))
     static SlateGray => Color.FromPtr(DllCall("Color\CreateSlateGrayColor", "Ptr"))
+    static SlateGrey => Color.FromPtr(DllCall("Color\CreateSlateGreyColor", "Ptr"))
     static Snow => Color.FromPtr(DllCall("Color\CreateSnowColor", "Ptr"))
     static SpringGreen => Color.FromPtr(DllCall("Color\CreateSpringGreenColor", "Ptr"))
     static SteelBlue => Color.FromPtr(DllCall("Color\CreateSteelBlueColor", "Ptr"))
@@ -1567,7 +1578,7 @@ class ColorBuffer
 
     Clear() => (DllCall("Color\ColorBufferClear", "Ptr", this.Ptr), this)
 
-    Sort(compare) => (callbackPtr := CallbackCreate(compare), DllCall("Color\ColorBufferSort", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr))
+    Sort(compare) => (callbackPtr := CallbackCreate(compare), DllCall("Color\ColorBufferSort", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr), this)
 
     AppendRight(other) => (DllCall("Color\ColorBufferAppendRight", "Ptr", this.Ptr, "Ptr", other.Ptr), this)
 
@@ -1590,6 +1601,8 @@ class ColorBuffer
      * @returns {ColorBuffer}
      */
     IndexFromXY(x, y, &index) => (DllCall("Color\ColorBufferGetIndex", "Ptr", this.Ptr, "Int", x, "Int", y, "Int*", &index), this)
+
+    Draw(hwnd, x, y) => (DllCall("Color\DrawColorBuffer", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y), this)
 
     /**
      * Creates a ColorBuffer instance from a pointer.
@@ -1900,6 +1913,8 @@ class Gradient
      * @returns {Gradient}
      */
     Complement() => (DllCall("Color\GradientComplement", "Ptr", this.Ptr, "Ptr"), this)
+
+    Draw(hwnd, x, y, width, height) => (DllCall("Color\DrawGradient", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y, "Int", width, "Height", height), this)
 
     /**
      * Creates a Gradient instance from a pointer to existing gradient data.
