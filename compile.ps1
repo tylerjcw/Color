@@ -1,4 +1,5 @@
 $srcDir = "src"
+$includeDir = "include"
 $outputFile = "Color.dll"
 
 $reset = "`e[0m"
@@ -17,11 +18,23 @@ if (Test-Path $outputFile)
     }
 }
 
-$sourceFiles = "$srcDir/Color.cpp $srcDir/ColorBuffer.cpp $srcDir/Gradient.cpp"
+$sourceFiles = @(
+    "$srcDir/Color.cpp",
+    "$srcDir/ColorBuffer.cpp",
+    "$srcDir/Gradient.cpp",
+    "$srcDir/ColorPicker.cpp",
+    "$srcDir/Showcase.cpp",
+    "$srcDir/exports/ColorBufferExports.cpp",
+    "$srcDir/exports/ColorExports.cpp",
+    "$srcDir/exports/GradientExports.cpp"
+    "$srcDir/exports/ColorPickerExports.cpp",
+    "$srcDir/exports/ShowcaseExports.cpp"
+) -join " "
+
 $compilerFlags = "-DBUILDING_DLL -fPIC -std=c++17 -Wall -Wextra"
 $linkerFlags = '-static -static-libgcc -static-libstdc++ "-Wl,--enable-stdcall-fixup" "-Wl,-Bstatic"'
-$libraries = "-lgdi32 -fopenmp"
-$includes = "-I$srcDir"
+$libraries = "-lgdi32 -lgdiplus -fopenmp"
+$includes = "-I$includeDir"
 
 $buildCmd = "g++ -shared -o `"$outputFile`" $sourceFiles $compilerFlags $linkerFlags $libraries $includes"
 

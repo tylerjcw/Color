@@ -1,0 +1,30 @@
+{
+    "type": "radial",
+    "angle": 0,
+    "totalSteps": 360,
+    "vertices": 5,
+    "focusX": 0,
+    "focusY": 0,
+    "edgeSharpness": 1,
+    "wavelength": 1,
+    "amplitude": 1.75,
+    "repetitions": 3,
+    "colorStops": [
+        {
+            "color": "ffff0000",
+            "position": 0
+        },
+        {
+            "color": "7800ff00",
+            "position": 0.33
+        },
+        {
+            "color": "ff0000ff",
+            "position": 0.66
+        },
+        {
+            "color": "ffff0000",
+            "position": 1
+        }
+    ]
+}

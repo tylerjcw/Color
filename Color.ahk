@@ -492,6 +492,7 @@ class Color
      * @returns {Color}
      */
     static FromTemp(kelvin) => Color.FromPtr(DllCall("Color\ColorFromTemp", "Double", kelvin, "Ptr"))
+    ToTemp() => DllCall("Color\ColorToTemp", "Ptr", this.Ptr, "Double")
 
     /**
      * Creates a Color object from Linear sRGB values.
@@ -806,13 +807,15 @@ class Color
      */
     ToCMYK() => (DllCall("Color\ColorToCMYK"   , "Ptr", this.Ptr, "Ptr", c := Buffer(8, 0)  , "Ptr", m := Buffer(8, 0), "Ptr", y := Buffer(8, 0), "Ptr", k := Buffer(8, 0) , "Ptr", a := Buffer(4, 0)), {C: NumGet(c, "Double"), M: NumGet(m, "Double"), Y: NumGet(y, "Double"), K: NumGet(k, "Double"), A: NumGet(a, "Int")})
 
+    ToDuv() => DllCall("Color\ColorToDuv", "Ptr", this.Ptr, "Double")
+
     /**
      * Generates an analogous color scheme.
      * @returns {Color[]} An array of Color objects representing the color scheme.
      */
     Analogous(angle := 30, count := 3)
     {
-        pColors := DllCall("Color\ColorAnalogous", "Ptr", this.ptr, "Double", angle, "Int", count, "Ptr", Buffer(count * A_PtrSize, 0), "Ptr")
+        pColors := DllCall("Color\ColorAnalogous", "Ptr", this.Ptr, "Double", angle, "Int", count, "Ptr", Buffer(count * A_PtrSize, 0), "Ptr")
 
         colors := []
         Loop count
@@ -827,7 +830,7 @@ class Color
      */
     Triadic(angle := 30)
     {
-        pColors := DllCall("Color\ColorTriadic", "Ptr", this.ptr, "Double", angle, "Ptr", Buffer(3 * A_PtrSize, 0), "Ptr")
+        pColors := DllCall("Color\ColorTriadic", "Ptr", this.Ptr, "Double", angle, "Ptr", Buffer(3 * A_PtrSize, 0), "Ptr")
 
         colors := []
         Loop 3
@@ -842,7 +845,7 @@ class Color
      */
     Tetradic(angle := 45)
     {
-        pColors := DllCall("Color\ColorTetradic", "Ptr", this.ptr, "Double", angle, "Ptr", Buffer(4 * A_PtrSize, 0), "Ptr")
+        pColors := DllCall("Color\ColorTetradic", "Ptr", this.Ptr, "Double", angle, "Ptr", Buffer(4 * A_PtrSize, 0), "Ptr")
 
         colors := []
         Loop 4
@@ -858,7 +861,7 @@ class Color
      */
     Monochromatic(count := 5)
     {
-        pColors := DllCall("Color\ColorMonochromatic", "Ptr", this.ptr, "Int", count, "Ptr", Buffer(count * A_PtrSize, 0), "Ptr")
+        pColors := DllCall("Color\ColorMonochromatic", "Ptr", this.Ptr, "Int", count, "Ptr", Buffer(count * A_PtrSize, 0), "Ptr")
 
         colors := []
         Loop count
@@ -1598,39 +1601,107 @@ class ColorBuffer
 
 class Gradient
 {
-    static Type := {Linear: 0, Radial: 1, Conical: 2}
-    static Repetition := {Repeat: 0, Reflect: 1, Pad: 2}
+    static Type := { Linear: 0, Radial: 1, Conical: 2 }
 
     /**
-     * Gets the total number of steps in the gradient.
+     * Gets or sets the total number of steps in the gradient.
      * @returns {number}
      */
-    Length => DllCall("Color\GradientGetTotalSteps", "Ptr", this.Ptr, "Int")
+    TotalSteps
+    {
+        get => DllCall("Color\GradientGetTotalSteps", "Ptr", this.Ptr, "Int")
+        set => DllCall("Color\GradientSetTotalSteps", "Ptr", this.Ptr, "Int", value)
+    }
 
-    /**
-     * Alias for Length. Gets the total number of steps in the gradient.
-     * @returns {number}
-     */
-    TotalSteps => this.Length
+    Type
+    {
+        get => DllCall("Color\GradientGetType", "Ptr", this.Ptr, "Int")
+        set => DllCall("Color\GradientSetType", "Ptr", this.Ptr, "Int", value)
+    }
+
+    Angle
+    {
+        get => DllCall("Color\GradientGetAngle", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetAngle", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Vertices
+    {
+        get => DllCall("Color\GradientGetVertices", "Ptr", this.Ptr, "Int")
+        set => DllCall("Color\GradientSetVertices", "Ptr", this.Ptr, "Int", value)
+    }
+
+    Distortion
+    {
+        get => DllCall("Color\GradientGetDistortion", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetDistortion", "Ptr", this.Ptr, "Float", value)
+    }
+
+    EdgeSharpness
+    {
+        get => DllCall("Color\GradientGetEdgeSharpness", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetEdgeSharpness", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Wavelength
+    {
+        get => DllCall("Color\GradientGetWavelength", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetWavelength", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Amplitude
+    {
+        get => DllCall("Color\GradientGetAmplitude", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetAmplitude", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Repetitions
+    {
+        get => DllCall("Color\GradientGetRepetitions", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\GradientSetRepetitions", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Focus
+    {
+        get
+        {
+            x := Buffer(4, 0), y := Buffer(4, 0)
+            DllCall("Color\GradientGetFocus", "Ptr", this.Ptr, "Ptr", x, "Ptr", y)
+            return {x: NumGet(x, "Float"), y: NumGet(y, "Float")}
+        }
+
+        set => DllCall("Color\GradientSetFocus", "Ptr", this.Ptr, "Float", value.x, "Float", value.y)
+    }
 
     /**
      * @constructor
      * @param {number} totalSteps - The total number of steps in the gradient.
      * @param {...Color} colors - The colors to initialize the gradient with.
      */
-    __New(totalSteps, colors*)
+    __New(totalStepsOrGradient, colors*)
     {
-        colorInts := []
+        if totalStepsOrGradient is Gradient  ; Copy constructor
+        {
+            this.Ptr := DllCall("Color\CreateGradientFromGradient", "Ptr", totalStepsOrGradient.Ptr, "Ptr")
+        }
+        else if colors.Length  ; Constructor with steps and colors
+        {
+            cols := Buffer(colors.Length * 4)
+            For i, col in colors
+                NumPut("UInt", col.ToInt(), cols, (i-1) * 4)
 
-        for col in colors
-            colorInts.Push(col.ToInt())
-
-        colorBuffer := Buffer(4 * colorInts.Length)
-        for i, colorInt in colorInts
-            NumPut("UInt", colorInt, colorBuffer, (i-1) * 4)
-
-        this.Ptr := DllCall("Color\CreateGradient", "Int", totalSteps, "Ptr", colorBuffer.Ptr, "Int", colorInts.Length, "Ptr")
+            this.Ptr := DllCall("Color\CreateGradientFromColors",
+                "Int", totalStepsOrGradient,
+                "Ptr", cols,
+                "Int", colors.Length,
+                "Ptr")
+        }
+        else  ; Constructor with just steps (rainbow gradient)
+        {
+            this.Ptr := DllCall("Color\CreateGradientFromSteps", "Int", totalStepsOrGradient, "Ptr")
+        }
     }
+
 
     /**
      * Deletes the Gradient object and frees associated resources.
@@ -1756,20 +1827,7 @@ class Gradient
      * @param {string} data - The serialized gradient data.
      * @returns {Gradient} A new Gradient instance from the serialized data.
      */
-    static Deserialize(data)
-    {
-        dataBuf := Buffer(StrPut(data, "UTF-8"))
-        StrPut(data, dataBuf, "UTF-8")
-        ptr := DllCall("Color\GradientDeserialize", "Ptr", dataBuf, "Ptr")
-        return Gradient.FromPtr(ptr)
-    }
-
-    static TestSerialization(input) {
-        buf := Buffer(StrPut(input, "UTF-8"))
-        StrPut(input, buf, "UTF-8")
-        return StrGet(DllCall("Color\GradientTestSerialization", "Ptr", buf, "Ptr"), "UTF-8")
-    }
-
+    static Deserialize(data) => (dataBuf := Buffer(StrPut(data, "UTF-8")), StrPut(data, dataBuf, "UTF-8"), ptr := DllCall("Color\GradientDeserialize", "Ptr", dataBuf, "Ptr"), Gradient.FromPtr(ptr))
     /**
      * @method ToHBITMAP
      * @param {number} width - The width of the bitmap.
@@ -1837,6 +1895,10 @@ class Gradient
      */
     Invert() => (DllCall("Color\GradientInvert", "Ptr", this.Ptr, "Ptr"), this)
 
+    /**
+     * Returns the Complements of all the Gradients colors. Self-Modifying.
+     * @returns {Gradient}
+     */
     Complement() => (DllCall("Color\GradientComplement", "Ptr", this.Ptr, "Ptr"), this)
 
     /**
@@ -1846,4 +1908,212 @@ class Gradient
      * @returns {Gradient} A new Gradient instance with the base set to Gradient.Prototype and the given Ptr.
      */
     static FromPtr(Ptr) => {base: Gradient.Prototype, Ptr: Ptr}
+}
+
+class ColorPicker
+{
+    static ViewModes => { None: 0, Grid: 1, Dot: 2, Crosshair: 3 }
+
+    __New(colorSpace := "Hex", format := "#{R}{G}{B}") => (this.Ptr := DllCall("Color\ColorPickerCreate", "AStr", colorSpace, "AStr", format, "Ptr"))
+    __Delete() => DllCall("Color\ColorPickerDestroy", "Ptr", this.Ptr)
+
+    Value
+    {
+        get => DllCall("Color\ColorPickerGetFormattedValue", "Ptr", this.Ptr, "AStr")
+    }
+
+    Start() => DllCall("Color\ColorPickerStart", "Ptr", this.Ptr)
+    Stop() => DllCall("Color\ColorPickerStop", "Ptr", this.Ptr)
+    Toggle() => DllCall("Color\ColorPickerToggle", "Ptr", this.Ptr)
+    IsActive() => DllCall("Color\ColorPickerIsActive", "Ptr", this.Ptr, "Int")
+    GetCurrentColor() => Color.FromPtr(DllCall("Color\ColorPickerGetCurrentColor", "Ptr", this.Ptr, "Ptr"))
+
+    SetPosition(x, y) => DllCall("Color\ColorPickerSetPosition", "Ptr", this.Ptr, "Int", x, "Int", y)
+    GetPosition(&x, &y) => DllCall("Color\ColorPickerGetPosition", "Ptr", this.Ptr, "Int*", &x, "Int*", &y)
+    Move(deltaX, deltaY) => DllCall("Color\ColorPickerMove", "Ptr", this.Ptr, "Int", deltaX, "Int", deltaY)
+    SetPreviewSize(width, height) => DllCall("Color\ColorPickerSetPreviewSize", "Ptr", this.Ptr, "Int", width, "Int", height)
+    SetCaptureSize(size) => DllCall("Color\ColorPickerSetCaptureSize", "Ptr", this.Ptr, "Int", size)
+    SetZoomLevel(zoom) => DllCall("Color\ColorPickerSetZoomLevel", "Ptr", this.Ptr, "Float", zoom)
+    ZoomIn(amount := 0.1) => DllCall("Color\ColorPickerZoomIn", "Ptr", this.Ptr, "Float", amount)
+    ZoomOut(amount := 0.1) => DllCall("Color\ColorPickerZoomOut", "Ptr", this.Ptr, "Float", amount)
+    IncreaseCaptureSize(amount := 1) => DllCall("Color\ColorPickerIncreaseCaptureSize", "Ptr", this.Ptr, "Int", amount)
+    DecreaseCaptureSize(amount := 1) => DllCall("Color\ColorPickerDecreaseCaptureSize", "Ptr", this.Ptr, "Int", amount)
+    SetFontSize(size) => DllCall("Color\ColorPickerSetFontSize", "Ptr", this.Ptr, "Int", size)
+    SetFontName(name) => DllCall("Color\ColorPickerSetFontName", "Ptr", this.Ptr, "WStr", name)
+    SetTextColor(color) => DllCall("Color\ColorPickerSetTextColor", "Ptr", this.Ptr, "Ptr", color.Ptr)
+    SetTextBackgroundColor(color) => DllCall("Color\ColorPickerSetTextBackgroundColor", "Ptr", this.Ptr, "Ptr", color.Ptr)
+    SetBorderColor(color) => DllCall("Color\ColorPickerSetBorderColor", "Ptr", this.Ptr, "Ptr", color.Ptr)
+    SetViewModeColor(color) => DllCall("Color\ColorPickerSetViewModeColor", "Ptr", this.Ptr, "Ptr", color.Ptr)
+    SetHighlightColor(color) => DllCall("Color\ColorPickerSetHighlightColor", "Ptr", this.Ptr, "Ptr", color.Ptr)
+    SetViewMode(mode) => DllCall("Color\ColorPickerSetViewMode", "Ptr", this.Ptr, "Int", mode)
+    ToggleViewMode(direction := 1) => DllCall("Color\ColorPickerToggleViewMode", "Ptr", this.Ptr, "Int", direction)
+    ToggleHighlight() => DllCall("Color\ColorPickerToggleHighlight", "Ptr", this.Ptr)
+
+    OnStart(callback)
+    {
+        if callback is Func
+            this.startCallback := CallbackCreate(callback)
+
+        DllCall("Color\ColorPickerSetOnStart", "Ptr", this.Ptr, "Ptr", this.startCallback)
+    }
+
+    OnUpdate(callback)
+    {
+        if callback is Func
+        {
+            wrappedCallback(colorInt)
+            {
+                col := Color.FromPtr(colorInt)
+                callback(col)
+            }
+            this.updateCallback := CallbackCreate(wrappedCallback)
+        }
+        DllCall("Color\ColorPickerSetOnUpdate", "Ptr", this.Ptr, "Ptr", this.updateCallback)
+    }
+
+    OnExit(callback)
+    {
+        if callback is Func
+        {
+            wrappedCallback(colorInt)
+            {
+                col := Color.FromPtr(colorInt)
+                callback(col)
+            }
+            this.exitCallback := CallbackCreate(wrappedCallback)
+        }
+        DllCall("Color\ColorPickerSetOnExit", "Ptr", this.Ptr, "Ptr", this.exitCallback)
+    }
+
+    static RunDefault(copy := true)
+    {
+        currentColor := 0
+
+        picker := ColorPicker("Hex", "#{R}{G}{B}")
+        picker.SetViewMode(ColorPicker.ViewModes.Grid)
+        picker.SetFontName("Consolas")
+        picker.SetFontSize(14)
+        picker.SetTextColor(Color.White)
+        picker.SetTextBackgroundColor(Color.Black)
+        picker.SetBorderColor(Color.Black)
+        picker.SetViewModeColor(Color.Black)
+        picker.SetHighlightColor(Color.White)
+        picker.Start()
+
+        while picker.IsActive()
+        {
+            if GetKeyState("h", "P")
+            {
+                picker.ToggleHighlight()
+                if !KeyWait("h", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("m")
+            {
+                picker.ToggleViewMode()
+                if !KeyWait("m", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("Up") || GetKeyState("Numpad8")
+            {
+                if GetKeyState("Shift", "P")
+                    picker.Move(0, -5)
+                else
+                    picker.Move(0, -1)
+                if !KeyWait("Up", "T0.10") || !KeyWait("Numpad8", "T0.10")
+                    continue
+            }
+
+            if GetKeyState("Down") || GetKeyState("Numpad2")
+            {
+                if GetKeyState("Shift", "P")
+                    picker.Move(0, 5)
+                else
+                    picker.Move(0, 1)
+                if !KeyWait("Down", "T0.10") || !KeyWait("Numpad2", "T0.10")
+                    continue
+            }
+
+            if GetKeyState("Left") || GetKeyState("Numpad4")
+            {
+                if GetKeyState("Shift", "P")
+                    picker.Move(-5, 0)
+                else
+                    picker.Move(-1, 0)
+                if !KeyWait("Left", "T0.10") || !KeyWait("Numpad4", "T0.10")
+                    continue
+            }
+
+            if GetKeyState("Right") || GetKeyState("Numpad6")
+            {
+                if GetKeyState("Shift", "P")
+                    picker.Move(5, 0)
+                else
+                    picker.Move(1, 0)
+                if !KeyWait("Right", "T0.10") || !KeyWait("Numpad6", "T0.10")
+                    continue
+            }
+
+            if GetKeyState("[") || GetKeyState("NumpadDiv")
+            {
+                picker.ZoomOut()
+                if !KeyWait("[", "T0.25") || !KeyWait("NumpadDiv", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("]") || GetKeyState("NumpadMult")
+            {
+                picker.ZoomIn()
+                if !KeyWait("]", "T0.25") || !KeyWait("NumpadMult", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("-") || GetKeyState("NumpadSub")
+            {
+                picker.DecreaseCaptureSize()
+                if !KeyWait("-", "T0.25") || !KeyWait("NumpadSub", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("=") || GetKeyState("NumpadAdd")
+            {
+                picker.IncreaseCaptureSize()
+                if !KeyWait("=", "T0.25") || !KeyWait("NumpadAdd", "T0.25")
+                    continue
+            }
+
+            if GetKeyState("Space") || GetKeyState("Enter") || GetKeyState("NumpadEnter") || GetKeyState("LButton")
+            {
+                picker.Stop()
+                break
+            }
+
+            if GetKeyState("Escape") || GetKeyState("q")
+            {
+                picker.Stop()
+                return
+            }
+
+            currentColor := picker.GetCurrentColor()
+            picker.SetTextBackgroundColor(currentColor)
+            Sleep(16)
+        }
+
+        if copy
+            A_Clipboard := picker.Value
+
+        return currentColor
+    }
+}
+
+Showcase(obj, title)
+{
+    if obj is Color
+        DllCall("Color\ShowColorShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+    else if obj is Gradient
+        DllCall("Color\ShowGradientShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+    else
+        throw Error("Invalid Type Received.")
 }
