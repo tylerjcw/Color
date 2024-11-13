@@ -143,6 +143,34 @@ extern "C"
         *a = color->a;
     }
 
+    COLOR_API Color* ColorFromRec2020(double r, double g, double b, int a) { return new Color(Color::FromRec2020(r, g, b, a)); }
+    COLOR_API void ColorToRec2020(Color* color, double* r, double* g, double* b, int* a)
+    {
+        color->ToRec2020(*r, *g, *b);
+        *a = color->a;
+    }
+
+    COLOR_API Color* ColorFromDisplayP3(double r, double g, double b, int a) { return new Color(Color::FromDisplayP3(r, g, b, a)); }
+    COLOR_API void ColorToDisplayP3(Color* color, double* r, double* g, double* b, int* a)
+    {
+        color->ToDisplayP3(*r, *g, *b);
+        *a = color->a;
+    }
+
+    COLOR_API Color* ColorFromOKLab(double l, double a, double b, int alpha) { return new Color(Color::FromOKLab(l, a, b, alpha)); }
+    COLOR_API void ColorToOKLab(Color* color, double* l, double* a, double* b, int* t)
+    {
+        color->ToOKLab(*l, *a, *b);
+        *t = color->a;
+    }
+
+    COLOR_API Color* ColorFromOKLCH(double l, double c, double h, int alpha) { return new Color(Color::FromOKLCH(l, c, h, alpha)); }
+    COLOR_API void ColorToOKLCH(Color* color, double* l, double* c, double* h, int* a)
+    {
+        color->ToOKLCH(*l, *c, *h);
+        *a = color->a;
+    }
+
     COLOR_API Color* ColorFromTemp(double kelvin) { return new Color(Color::FromTemp(kelvin)); }
     COLOR_API double ColorToTemp(Color* color)
     {

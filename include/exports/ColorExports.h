@@ -202,6 +202,14 @@ extern "C"
     COLOR_API Color* ColorFromLCHab(double l, double c, double h, int a);
     COLOR_API void ColorToLCHuv(Color* color, double* l, double* c, double* h, int* a);
     COLOR_API Color* ColorFromLCHuv(double l, double c, double h, int a);
+    COLOR_API void ColorToRec2020(Color* color, double* r, double* g, double* b, int* a);
+    COLOR_API Color* ColorFromRec2020(double r, double g, double b, int a);
+    COLOR_API void ColorToDisplayP3(Color* color, double* r, double* g, double* b, int* a);
+    COLOR_API Color* ColorFromDisplayP3(double r, double g, double b, int a);
+    COLOR_API void ColorToOKLab(Color* color, double* l, double* a, double* b, int* t);
+    COLOR_API Color* ColorFromOKLab(double l, double a, double b, int alpha);
+    COLOR_API void ColorToOKLCH(Color* color, double* l, double* c, double* h, int* a);
+    COLOR_API Color* ColorFromOKLCH(double l, double c, double h, int alpha);
     #pragma endregion
 
     #pragma region Color manipulation

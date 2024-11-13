@@ -7,7 +7,7 @@
  * the color function syntax (eg: "rgb(123, 61, 93)", "ncol(B20, 40%, 5%)", "hsl(120, 70%, 50%)", etc...)
  * or using Hex (RRGGBB, or AARRGGBB with "0x" or "#" preceding), or you can use
  * RGB or RGBA ("R, G, B" or "R, G, B, A"). If the input is valid, it will convert it to all supported
- * formats of the Color class. You can then click on any of the group boxes to copy the full color string
+ * Color Spaces. You can then click on any of the group boxes to copy the full color string
  * to the clipboard.
  */
 
@@ -22,7 +22,7 @@ pickBtn    := MainGui.Add("Button", "x10 y+7 w200", "Pick Color")
 convertBtn := MainGui.Add("Button", "x220 y10 w80 h80", "Convert")
 colorPreview := MainGui.Add("Progress", "x310 y10 w500 h80 +Background000000")
 
-labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "HSL", "HSV", "HSI", "HWB", "CMYK", "NCol", "XYZ", "Lab", "LCHab", "YIQ", "Luv", "LCHuv", "YPbPr"]
+labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "HSL", "HSV", "HSI", "HWB", "CMYK", "NCol", "XYZ_D50", "XYZ_D65", "Lab", "LCHab", "YIQ", "Luv", "LCHuv", "YPbPr", "OKLCH", "OKLab", "Rec2020", "DisplayP3"]
 
 labelControls := Map()
 componentControls := Map()
@@ -65,7 +65,7 @@ for index, label in labels
 picker := ColorPicker()
 picker.OnUpdate(PickerUpdate)
 picker.OnExit(PickerExit)
-PickerExit(Color.Black) ; Set up the initial color to display
+PickerExit(Color.Black)
 
 MainGui.Show()
 
@@ -122,8 +122,8 @@ ConvertColor(*)
 {
     input := StrLower(inputEdit.Value)
 
-    try
-    {
+    ;try
+    ;{
         ; build this RegEx to match all color formats except hex, and pull out their type and channels
         chT  := "(?<type>[a-z]+)\("                 ; Matches the origin color type "ncol", "rgb", "hsl", etc...
         ch1  := "(?<ch1>[RYGCBMrygcbm]??\d+(\.\d+)?)%?, ?" ; The first channel of the color
@@ -158,7 +158,9 @@ ConvertColor(*)
                     col := Color.FromCMYK(match.ch1, match.ch2, match.ch3, match.ch4)
                 case "ncol":
                     col := Color.FromNCol(StrUpper(match.ch1), match.ch2, match.ch3)
-                case "xyz":
+                case "xyz_d50":
+                    col := Color.FromXYZ_D50(match.ch1, match.ch2, match.ch3)
+                case "xyz_d65":
                     col := Color.FromXYZ_D65(match.ch1, match.ch2, match.ch3)
                 case "lab":
                     col := Color.FromLab(match.ch1, match.ch2, match.ch3)
@@ -178,6 +180,14 @@ ConvertColor(*)
                     col := Color.FromLuv(match.ch1, match.ch2, match.ch3)
                 case "ypbpr":
                     col := Color.FromYPbPr(match.ch1, match.ch2, match.ch3)
+                case "oklch":
+                    col := Color.FromOKLCH(match.ch1, match.ch2, match.ch3)
+                case "oklab":
+                    col := Color.FromOKLab(match.ch1, match.ch2, match.ch3)
+                case "rec2020":
+                    col := Color.FromRec2020(match.ch1, match.ch2, match.ch3)
+                case "displayp3":
+                    col := Color.FromDisplayP3(match.ch1, match.ch2, match.ch3)
                 default:
                     throw Error("Error in color syntax (function).")
             }
@@ -248,11 +258,17 @@ ConvertColor(*)
         componentControls["NCol"]["2"].Text := "W: " Round(ncol.W, 2)
         componentControls["NCol"]["3"].Text := "B: " Round(ncol.B, 2)
 
+        xyz := col.ToXYZ_D50()
+        labelControls["XYZ_D50"].Text := col.ToString("XYZ_D50")
+        componentControls["XYZ_D50"]["1"].Text := "X: " Round(xyz.X, 2)
+        componentControls["XYZ_D50"]["2"].Text := "Y: " Round(xyz.Y, 2)
+        componentControls["XYZ_D50"]["3"].Text := "Z: " Round(xyz.Z, 2)
+
         xyz := col.ToXYZ_D65()
-        labelControls["XYZ"].Text := col.ToString("XYZ")
-        componentControls["XYZ"]["1"].Text := "X: " Round(xyz.X, 2)
-        componentControls["XYZ"]["2"].Text := "Y: " Round(xyz.Y, 2)
-        componentControls["XYZ"]["3"].Text := "Z: " Round(xyz.Z, 2)
+        labelControls["XYZ_D65"].Text := col.ToString("XYZ_D65")
+        componentControls["XYZ_D65"]["1"].Text := "X: " Round(xyz.X, 2)
+        componentControls["XYZ_D65"]["2"].Text := "Y: " Round(xyz.Y, 2)
+        componentControls["XYZ_D65"]["3"].Text := "Z: " Round(xyz.Z, 2)
 
         lab := col.ToLab()
         labelControls["Lab"].Text := col.ToString("Lab")
@@ -307,9 +323,33 @@ ConvertColor(*)
         componentControls["YPbPr"]["1"].Text := "Y: " . Round(ypbpr.Y, 4)
         componentControls["YPbPr"]["2"].Text := "Pb: " . Round(ypbpr.Cb, 4)
         componentControls["YPbPr"]["3"].Text := "Pr: " . Round(ypbpr.Cr, 4)
-    }
-    catch Error as err
-    {
-        MsgBox("Error converting color: " err.Message)
-    }
+
+        oklch := col.ToOKLCH()
+        labelControls["OKLCH"].Text := col.ToString("OKLCH")
+        componentControls["OKLCH"]["1"].Text := "L: " . Round(oklch.L, 4)
+        componentControls["OKLCH"]["2"].Text := "C: " . Round(oklch.C, 4)
+        componentControls["OKLCH"]["3"].Text := "H: " . Round(oklch.H, 4)
+
+        oklab := col.ToOKLab()
+        labelControls["OKLab"].Text := col.ToString("OKLab")
+        componentControls["OKLab"]["1"].Text := "L: " . Round(oklab.L, 4)
+        componentControls["OKLab"]["2"].Text := "C: " . Round(oklab.A, 4)
+        componentControls["OKLab"]["3"].Text := "H: " . Round(oklab.B, 4)
+
+        rec2020 := col.ToRec2020()
+        labelControls["Rec2020"].Text := col.ToString("Rec2020")
+        componentControls["Rec2020"]["1"].Text := "R: " . Round(rec2020.R, 4)
+        componentControls["Rec2020"]["2"].Text := "G: " . Round(rec2020.G, 4)
+        componentControls["Rec2020"]["3"].Text := "B: " . Round(rec2020.B, 4)
+
+        displayp3 := col.ToDisplayP3()
+        labelControls["DisplayP3"].Text := col.ToString("Rec2020")
+        componentControls["DisplayP3"]["1"].Text := "R: " . Round(displayp3.R, 4)
+        componentControls["DisplayP3"]["2"].Text := "G: " . Round(displayp3.G, 4)
+        componentControls["DisplayP3"]["3"].Text := "B: " . Round(displayp3.B, 4)
+    ;}
+    ;catch Error as err
+    ;{
+    ;    MsgBox("Error converting color: " err.Message)
+    ;}
 }

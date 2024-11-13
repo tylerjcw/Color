@@ -947,6 +947,142 @@ namespace KTLib
         return FromHWB(h, w, b, a);
     }
 
+    void Color::ToRec2020(double& outR, double& outG, double& outB) const
+    {
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+        x /= 100.0; y /= 100.0; z /= 100.0;
+
+        outR = 1.7166511879712674 * x - 0.3556707837763924 * y - 0.2533662813736599 * z;
+        outG = -0.6666843518324892 * x + 1.6164812366349395 * y + 0.0157685458139111 * z;
+        outB = 0.0176398574453108 * x - 0.0427706133302187 * y + 0.9421031212179456 * z;
+
+        // Apply Rec.2020 transfer function
+        auto gamma = [](double x) {
+            return x < 0.018053968510807 ? 4.5 * x : 1.09929682680944 * std::pow(x, 0.45) - 0.09929682680944;
+        };
+        outR = gamma(outR);
+        outG = gamma(outG);
+        outB = gamma(outB);
+    }
+
+    Color Color::FromRec2020(double r, double g, double b, int a)
+    {
+        // Inverse Rec.2020 transfer function
+        auto invGamma = [](double x) {
+            return x < 0.08145 ? x / 4.5 : std::pow((x + 0.09929682680944) / 1.09929682680944, 1.0 / 0.45);
+        };
+        r = invGamma(r);
+        g = invGamma(g);
+        b = invGamma(b);
+
+        // Convert to XYZ
+        double x = 0.6369580483012914 * r + 0.1446169035862083 * g + 0.1688809751641721 * b;
+        double y = 0.2627002120112671 * r + 0.6779980715188708 * g + 0.0593017164698621 * b;
+        double z = 0.0000000000000000 * r + 0.0280726930490874 * g + 1.0609850577107972 * b;
+
+        return FromXYZ_D65(x * 100, y * 100, z * 100, a);
+    }
+
+    void Color::ToDisplayP3(double& outR, double& outG, double& outB) const
+    {
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+        x /= 100.0; y /= 100.0; z /= 100.0;
+
+        outR = 2.4934969119414254 * x - 0.9313836179191239 * y - 0.4027107844507168 * z;
+        outG = -0.8294889695615747 * x + 1.7626640603183463 * y + 0.0236994711743375 * z;
+        outB = 0.0358458302437845 * x - 0.0761723892680418 * y + 0.9568845240076871 * z;
+
+        // Apply Display P3 transfer function (same as sRGB)
+        auto gamma = [](double x) {
+            return x <= 0.0031308 ? 12.92 * x : 1.055 * std::pow(x, 1.0/2.4) - 0.055;
+        };
+        outR = gamma(outR);
+        outG = gamma(outG);
+        outB = gamma(outB);
+    }
+
+    Color Color::FromDisplayP3(double r, double g, double b, int a)
+    {
+        // Inverse Display P3 transfer function
+        auto invGamma = [](double x) {
+            return x <= 0.04045 ? x / 12.92 : std::pow((x + 0.055) / 1.055, 2.4);
+        };
+        r = invGamma(r);
+        g = invGamma(g);
+        b = invGamma(b);
+
+        // Convert to XYZ
+        double x = 0.4865709486482162 * r + 0.2656676931690931 * g + 0.1982172852343625 * b;
+        double y = 0.2289745640697488 * r + 0.6917385218365064 * g + 0.0792869140937449 * b;
+        double z = 0.0000000000000000 * r + 0.0451133818589026 * g + 1.0439443689009766 * b;
+
+        return FromXYZ_D65(x * 100, y * 100, z * 100, a);
+    }
+
+    void Color::ToOKLab(double& outL, double& outa, double& outb) const
+    {
+        // First convert to XYZ
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+        x /= 100.0; y /= 100.0; z /= 100.0;
+
+        // Convert to LMS
+        double l = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z;
+        double m = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z;
+        double s = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z;
+
+        // Non-linear compression
+        l = std::cbrt(l);
+        m = std::cbrt(m);
+        s = std::cbrt(s);
+
+        // Convert to OKLab
+        outL = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+        outa = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+        outb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+    }
+
+    Color Color::FromOKLab(double l, double a, double b, int alpha)
+    {
+        // Convert from OKLab to LMS
+        double l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+        double m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+        double s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+
+        // Reverse non-linear compression
+        l_ = l_ * l_ * l_;
+        m_ = m_ * m_ * m_;
+        s_ = s_ * s_ * s_;
+
+        // Convert to XYZ
+        double x = +4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+        double y = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+        double z = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_;
+
+        return FromXYZ_D65(x * 100, y * 100, z * 100, alpha);
+    }
+
+    void Color::ToOKLCH(double& outL, double& outC, double& outH) const
+    {
+        double l, a, b;
+        ToOKLab(l, a, b);
+
+        outL = l;
+        outC = std::sqrt(a * a + b * b);
+        outH = std::atan2(b, a) * 180.0 / CONST_PI;
+        if (outH < 0) outH += 360.0;
+    }
+
+    Color Color::FromOKLCH(double l, double c, double h, int alpha)
+    {
+        double a = c * std::cos(h * CONST_PI / 180.0);
+        double b = c * std::sin(h * CONST_PI / 180.0);
+
+        return FromOKLab(l, a, b, alpha);
+    }
+
     // From Kelvin (°K)
     Color Color::FromTemp(double kelvin)
     {
@@ -1438,6 +1574,10 @@ namespace KTLib
         if (strcmp(type, "Luv")  == 0)        return "luv({L}, {U}, {V})";
         if (strcmp(type, "LCHab") == 0)       return "lchab({L}, {C}, {H})";
         if (strcmp(type, "YPbPr") == 0)       return "ypbpr({Y}, {Cb}, {Cr})";
+        if (strcmp(type, "Rec2020") == 0)     return "rec2020({R}, {G}, {B})";
+        if (strcmp(type, "DisplayP3") == 0)   return "display-p3({R}, {G}, {B})";
+        if (strcmp(type, "OKLab") == 0)       return "oklab({L}, {A}, {B})";
+        if (strcmp(type, "OKLCH") == 0)       return "oklch({L}, {C}, {H})";
         throw std::invalid_argument("Unsupported color type");
     }
 
@@ -1539,7 +1679,16 @@ namespace KTLib
             replaceFormatter("{K", k);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "XYZ") == 0)
+        else if (strcmp(type, "XYZ_D50") == 0)
+        {
+            double x, y, z;
+             ToXYZ_D50(x, y, z);
+            replaceFormatter("{X", x);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{Z", z);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(type, "XYZ_D65") == 0)
         {
             double x, y, z;
              ToXYZ_D65(x, y, z);
@@ -1637,6 +1786,42 @@ namespace KTLib
             result = Color::ReplaceAll(result, "{H}", n);
             replaceFormatter("{W", c);
             replaceFormatter("{B", (100 - l));
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(type, "Rec2020") == 0)
+        {
+            double r, g, b;
+            ToRec2020(r, g, b);
+            replaceFormatter("{R", r);
+            replaceFormatter("{G", g);
+            replaceFormatter("{B", b);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(type, "DisplayP3") == 0)
+        {
+            double r, g, b;
+            ToDisplayP3(r, g, b);
+            replaceFormatter("{R", r);
+            replaceFormatter("{G", g);
+            replaceFormatter("{B", b);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(type, "OKLab") == 0)
+        {
+            double l, a, b;
+            ToOKLab(l, a, b);
+            replaceFormatter("{L", l);
+            replaceFormatter("{A", a);
+            replaceFormatter("{B", b);
+            replaceFormatter("{T", static_cast<double>(this->a));
+        }
+        else if (strcmp(type, "OKLCH") == 0)
+        {
+            double l, c, h;
+            ToOKLCH(l, c, h);
+            replaceFormatter("{L", l);
+            replaceFormatter("{C", c);
+            replaceFormatter("{H", h);
             replaceFormatter("{A", static_cast<double>(a));
         }
         else

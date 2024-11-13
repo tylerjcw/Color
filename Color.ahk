@@ -160,7 +160,8 @@ class Color
                 case "HEX":         format := Color.DefaultFormatString.Hex
                 case "HSL":         format := Color.DefaultFormatString.HSL
                 case "HWB":         format := Color.DefaultFormatString.HWB
-                case "XYZ":         format := Color.DefaultFormatString.XYZ
+                case "XYZ_D50":     format := Color.DefaultFormatString.XYZ_D50
+                case "XYZ_D65":     format := Color.DefaultFormatString.XYZ_D65
                 case "Lab":         format := Color.DefaultFormatString.Lab
                 case "YIQ":         format := Color.DefaultFormatString.YIQ
                 case "NCol":        format := Color.DefaultFormatString.NCol
@@ -172,6 +173,10 @@ class Color
                 case "AdobeRGB":    format := Color.DefaultFormatString.AdobeRGB
                 case "ProPhotoRGB": format := Color.DefaultFormatString.ProPhotoRGB
                 case "Luv":         format := Color.DefaultFormatString.Luv
+                case "Rec2020":     format := Color.DefaultFormatString.Rec2020
+                case "DisplayP3":   format := Color.DefaultFormatString.DisplayP3
+                case "OKLCH":       format := Color.DefaultFormatString.OKLCH
+                case "OKLab":       format := Color.DefaultFormatString.OKLab
             }
         }
 
@@ -524,6 +529,70 @@ class Color
      * @returns {Color}
      */
     static FromProPhotoRGB(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromProPhotoRGB", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
+
+    /**
+     * Converts the color to Rec.2020 format.
+     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     */
+    ToRec2020() => (DllCall("Color\ColorToRec2020", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Creates a Color object from Rec.2020 values.
+     * @param {number} r - The red value (0-1).
+     * @param {number} g - The green value (0-1).
+     * @param {number} b - The blue value (0-1).
+     * @param {number} [a=255] - The alpha value (0-255).
+     * @returns {Color}
+     */
+    static FromRec2020(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromRec2020", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
+
+    /**
+     * Converts the color to Display-P3 format.
+     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     */
+    ToDisplayP3() => (DllCall("Color\ColorToDisplayP3", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Creates a Color object from Display-P3 values.
+     * @param {number} r - The red value (0-1).
+     * @param {number} g - The green value (0-1).
+     * @param {number} b - The blue value (0-1).
+     * @param {number} [a=255] - The alpha value (0-255).
+     * @returns {Color}
+     */
+    static FromDisplayP3(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromDisplayP3", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
+
+    /**
+     * Converts the color to OKLab format.
+     * @returns {Object} An object containing L, a, b, and A values.
+     */
+    ToOKLab() => (DllCall("Color\ColorToOKLab", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", a := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", t := Buffer(4, 0)), {L: NumGet(l, "Double"), a: NumGet(a, "Double"), b: NumGet(b, "Double"), T: NumGet(t, "Int")})
+
+    /**
+     * Creates a Color object from OKLab values.
+     * @param {number} l - The lightness value.
+     * @param {number} a - The green-red value.
+     * @param {number} b - The blue-yellow value.
+     * @param {number} [alpha=255] - The alpha value (0-255).
+     * @returns {Color}
+     */
+    static FromOKLab(l, a, b, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLab", "Double", l, "Double", a, "Double", b, "Int", alpha, "Ptr"))
+
+    /**
+     * Converts the color to OKLCH format.
+     * @returns {Object} An object containing L, C, H, and A values.
+     */
+    ToOKLCH() => (DllCall("Color\ColorToOKLCH", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", c := Buffer(8, 0), "Ptr", h := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {L: NumGet(l, "Double"), C: NumGet(c, "Double"), H: NumGet(h, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Creates a Color object from OKLCH values.
+     * @param {number} l - The lightness value.
+     * @param {number} c - The chroma value.
+     * @param {number} h - The hue value (0-360).
+     * @param {number} [alpha=255] - The alpha value (0-255).
+     * @returns {Color}
+     */
+    static FromOKLCH(l, c, h, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLCH", "Double", l, "Double", c, "Double", h, "Int", alpha, "Ptr"))
 
     /**
      * Creates a Color object from NCol values.
@@ -909,6 +978,10 @@ class Color
          */
         static RGB  := "rgba({R}, {G}, {B}, {A})"
 
+        /**
+         * Default format string for Linear sRGB color representation.
+         * @type {string}
+         */
         static LinearSRGB := "srgb({R:3}, {G:3}, {B:3})"
 
         /**
@@ -930,10 +1003,16 @@ class Color
         static HWB  := "hwb({H}, {W}%, {B}%)"
 
         /**
-         * Default format string for XYZ color representation.
+         * Default format string for XYZ_D50 color representation.
          * @type {string}
          */
-        static XYZ  := "xyz({X}, {Y}, {Z})"
+        static XYZ_D50  := "xyz_d50({X}, {Y}, {Z})"
+
+        /**
+         * Default format string for XYZ_D65 color representation.
+         * @type {string}
+         */
+        static XYZ_D65  := "xyz_d65({X}, {Y}, {Z})"
 
         /**
          * Default format string for Lab color representation.
@@ -965,6 +1044,10 @@ class Color
          */
         static HSV := "hsv({H}, {S}%, {V}%)"
 
+        /**
+         * Default format string for HSI color representation.
+         * @type {string}
+         */
         static HSI := "hsi({H}, {S}%, {I})"
 
         /**
@@ -979,6 +1062,10 @@ class Color
          */
         static LCHab := "lchab({L}, {C}, {H})"
 
+        /**
+         * Default format string for LCHuv color representation.
+         * @type {string}
+         */
         static LCHuv := "lchuv({L}, {C}, {H})"
 
         /**
@@ -998,6 +1085,30 @@ class Color
          * @type {string}
          */
         static Luv := "luv({L}, {U}, {V})"
+
+        /**
+         * Default format string for Rec2020 color representation.
+         * @type {string}
+         */
+        static Rec2020 := "rec2020({R:3}, {G:3}, {B:3})"
+
+        /**
+         * Default format string for DisplayP3 color representation.
+         * @type {string}
+         */
+        static DisplayP3 := "display-p3({R:3}, {G:3}, {B:3})"
+
+        /**
+         * Default format string for OKLab color representation.
+         * @type {string}
+         */
+        static OKLab := "oklab({L}, {a}, {b})"
+
+        /**
+         * Default format string for OKLCH color representation.
+         * @type {string}
+         */
+        static OKLCH := "oklch({L}, {C}, {H})"
     }
 }
 

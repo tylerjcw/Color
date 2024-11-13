@@ -154,6 +154,14 @@ namespace KTLib
             static Color FromLCHuv(double l, double c, double h, int alpha = 255);
             void ToNCol(std::string& n, double& c, double& l) const;
             static Color FromNCol(const std::string& n, double c, double l, int a);
+            void ToRec2020(double& outR, double& outG, double& outB) const;
+            static Color FromRec2020(double r, double g, double b, int a = 255);
+            void ToDisplayP3(double& outR, double& outG, double& outB) const;
+            static Color FromDisplayP3(double r, double g, double b, int a = 255);
+            void ToOKLab(double& outL, double& outa, double& outb) const;
+            static Color FromOKLab(double l, double a, double b, int alpha = 255);
+            void ToOKLCH(double& outL, double& outC, double& outH) const;
+            static Color FromOKLCH(double l, double c, double h, int alpha = 255);
             double ToTemp() const;
             static Color FromTemp(double temp);
             void ShiftTemp(double amount);
@@ -349,147 +357,3 @@ namespace KTLib
             static inline Color YellowGreen()          { return Color(0xFF9ACD32); }
     };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
