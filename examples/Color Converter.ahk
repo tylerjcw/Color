@@ -20,14 +20,14 @@ inputEdit := MainGui.Add("Edit", "x10 y30 w200 vInputColor")
 inputEdit.SetFont("s10", "Consolas")
 pickBtn    := MainGui.Add("Button", "x10 y+7 w200", "Pick Color")
 convertBtn := MainGui.Add("Button", "x220 y10 w80 h80", "Convert")
-colorPreview := MainGui.Add("Progress", "x310 y10 w500 h80 +Background000000")
+colorPreview := MainGui.Add("Progress", "x310 y10 w770 h80 +Background000000")
 
-labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "HSL", "HSV", "HSI", "HWB", "CMYK", "NCol", "XYZ_D50", "XYZ_D65", "Lab", "LCHab", "YIQ", "Luv", "LCHuv", "YPbPr", "OKLCH", "OKLab", "Rec2020", "DisplayP3"]
+labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "HSL", "HSV", "HSI", "HWB", "HSP", "CMYK", "NCol", "XYZ_D50", "XYZ_D65", "Lab", "LCHab", "YIQ", "Luv", "LCHuv", "YPbPr", "OKLCH", "OKLab", "Rec2020", "DisplayP3"]
 
 labelControls := Map()
 componentControls := Map()
 
-gridWidth := 3
+gridWidth := 4
 gridHeight := 6
 boxWidth := 260
 boxHeight := 120
@@ -188,6 +188,8 @@ ConvertColor(*)
                     col := Color.FromRec2020(match.ch1, match.ch2, match.ch3)
                 case "displayp3":
                     col := Color.FromDisplayP3(match.ch1, match.ch2, match.ch3)
+                case "hsp":
+                    col := Color.FromHSP(match.ch1, match.ch2, match.ch3)
                 default:
                     throw Error("Error in color syntax (function).")
             }
@@ -260,9 +262,9 @@ ConvertColor(*)
 
         xyz := col.ToXYZ_D50()
         labelControls["XYZ_D50"].Text := col.ToString("XYZ_D50")
-        componentControls["XYZ_D50"]["1"].Text := "X: " Round(xyz.X, 2)
-        componentControls["XYZ_D50"]["2"].Text := "Y: " Round(xyz.Y, 2)
-        componentControls["XYZ_D50"]["3"].Text := "Z: " Round(xyz.Z, 2)
+        componentControls["XYZ_D50"]["1"].Text := "X: " Round(xyz.X, 4)
+        componentControls["XYZ_D50"]["2"].Text := "Y: " Round(xyz.Y, 4)
+        componentControls["XYZ_D50"]["3"].Text := "Z: " Round(xyz.Z, 4)
 
         xyz := col.ToXYZ_D65()
         labelControls["XYZ_D65"].Text := col.ToString("XYZ_D65")
@@ -333,8 +335,8 @@ ConvertColor(*)
         oklab := col.ToOKLab()
         labelControls["OKLab"].Text := col.ToString("OKLab")
         componentControls["OKLab"]["1"].Text := "L: " . Round(oklab.L, 4)
-        componentControls["OKLab"]["2"].Text := "C: " . Round(oklab.A, 4)
-        componentControls["OKLab"]["3"].Text := "H: " . Round(oklab.B, 4)
+        componentControls["OKLab"]["2"].Text := "a: " . Round(oklab.a, 4)
+        componentControls["OKLab"]["3"].Text := "b: " . Round(oklab.b, 4)
 
         rec2020 := col.ToRec2020()
         labelControls["Rec2020"].Text := col.ToString("Rec2020")
@@ -347,6 +349,12 @@ ConvertColor(*)
         componentControls["DisplayP3"]["1"].Text := "R: " . Round(displayp3.R, 4)
         componentControls["DisplayP3"]["2"].Text := "G: " . Round(displayp3.G, 4)
         componentControls["DisplayP3"]["3"].Text := "B: " . Round(displayp3.B, 4)
+
+        hsp := col.ToHSP()
+        labelControls["HSP"].Text := col.ToString("HSP")
+        componentControls["HSP"]["1"].Text := "H: " . Round(hsp.H, 4)
+        componentControls["HSP"]["2"].Text := "S: " . Round(hsp.S, 4)
+        componentControls["HSP"]["3"].Text := "P: " . Round(hsp.P, 4)
     ;}
     ;catch Error as err
     ;{

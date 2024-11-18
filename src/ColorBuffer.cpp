@@ -2,6 +2,7 @@
 
 #include "../include/ColorBuffer.hpp"
 
+#include <unordered_set>
 #include <stdexcept>
 #include <algorithm>
 #include <random>
@@ -83,6 +84,7 @@ namespace KTLib
     void ColorBuffer::SetGreen(int value) { for (auto& color : m_colors) color.SetGreen(std::clamp(value, 0, 255)); }
     void ColorBuffer::SetBlue(int value)  { for (auto& color : m_colors) color.SetBlue(std::clamp(value, 0, 255)); }
     void ColorBuffer::SetAlpha(int value) { for (auto& color : m_colors) color.SetAlpha(std::clamp(value, 0, 255)); }
+    void ColorBuffer::ApplyMatrix(const ColorMatrix& matrix) { std::transform(m_colors.begin(), m_colors.end(), m_colors.begin(), [&matrix](const Color& color) { return color * matrix; }); }
     #pragma endregion
 
     #pragma region Color Modification Functions
@@ -383,22 +385,23 @@ namespace KTLib
 
     void ColorBuffer::OverlayImage(const ColorBuffer& overlay, int x, int y, double opacity)
     {
-        int overlayWidth = overlay.GetWidth();
-        int overlayHeight = overlay.GetHeight();
-
         #pragma omp parallel for
-        for (int i = 0; i < overlayWidth * overlayHeight; ++i)
+        for (int i = 0; i < overlay.GetWidth() * overlay.GetHeight(); ++i)
         {
-            int dx = i % overlayWidth;
-            int dy = i / overlayWidth;
+            int dx = i % overlay.GetWidth();
+            int dy = i / overlay.GetWidth();
             int destX = x + dx;
             int destY = y + dy;
 
             if (destX >= 0 && destX < m_width && destY >= 0 && destY < m_height)
             {
-                Color& baseColor = m_colors[destY * m_width + destX];
                 const Color& overlayColor = overlay.GetAt(i);
-                baseColor.Mix(overlayColor, opacity);
+                if (overlayColor.GetAlpha() > 0) // Only blend non-transparent pixels
+                {
+                    double alpha = (overlayColor.GetAlpha() / 255.0) * opacity;
+                    Color& baseColor = m_colors[destY * m_width + destX];
+                    baseColor = Color::Mix(baseColor, overlayColor, alpha);
+                }
             }
         }
     }
@@ -947,6 +950,9 @@ namespace KTLib
     #pragma region Utility
     Color ColorBuffer::CalculateAverageColor(int startX, int startY, int pixelWidth, int pixelHeight)
     {
+        if (pixelWidth == 0) pixelWidth = m_width;
+        if (pixelHeight == 0) pixelHeight = m_height;
+
         int totalR = 0, totalG = 0, totalB = 0, totalA = 0;
         int count = 0;
         int endX = std::min(startX + pixelWidth, m_width);
@@ -1144,6 +1150,16 @@ namespace KTLib
         this->Resize(newWidth, newHeight);
     }
 
+    size_t ColorBuffer::CountUniqueColors() const
+    {
+        std::unordered_set<Color> uniqueColors;
+        uniqueColors.reserve(m_colors.size());
+
+        for (const auto& color : m_colors) uniqueColors.insert(color);
+
+        return uniqueColors.size();
+    }
+
     int ColorBuffer::Find(const Color& color) const
     {
         auto it = std::find(m_colors.begin(), m_colors.end(), color);
@@ -1297,7 +1313,7 @@ namespace KTLib
         return hBitmap;
     }
 
-    ColorBuffer* ColorBuffer::FromHBITMAP(HBITMAP hBitmap, int targetWidth, int targetHeight)
+    ColorBuffer* ColorBuffer::FromHBITMAP(HBITMAP hBitmap, int width, int height)
     {
         BITMAP bm;
         GetObject(hBitmap, sizeof(BITMAP), &bm);
@@ -1305,8 +1321,8 @@ namespace KTLib
         int sourceWidth = bm.bmWidth;
         int sourceHeight = bm.bmHeight;
 
-        targetWidth = (targetWidth <= 0) ? sourceWidth : targetWidth;
-        targetHeight = (targetHeight <= 0) ? sourceHeight : targetHeight;
+        width = (width <= 0) ? sourceWidth : width;
+        height = (height <= 0) ? sourceHeight : height;
 
         HDC hdc = GetDC(NULL);
         HDC memDC = CreateCompatibleDC(hdc);
@@ -1323,14 +1339,14 @@ namespace KTLib
         std::vector<BYTE> buffer(sourceWidth * sourceHeight * 4);
         GetDIBits(memDC, hBitmap, 0, sourceHeight, buffer.data(), &bmi, DIB_RGB_COLORS);
 
-        ColorBuffer* colorBuffer = new ColorBuffer(targetWidth, targetHeight);
+        ColorBuffer* colorBuffer = new ColorBuffer(width, height);
 
-        for (int i = 0; i < targetWidth * targetHeight; ++i)
+        for (int i = 0; i < width * height; ++i)
         {
-            int x = i % targetWidth;
-            int y = i / targetWidth;
-            int srcX = x * sourceWidth / targetWidth;
-            int srcY = y * sourceHeight / targetHeight;
+            int x = i % width;
+            int y = i / width;
+            int srcX = x * sourceWidth / width;
+            int srcY = y * sourceHeight / height;
             int index = (srcY * sourceWidth + srcX) * 4;
             colorBuffer->m_colors[i] = Color(buffer[index + 2], buffer[index + 1], buffer[index], buffer[index + 3]);
         }
@@ -1340,6 +1356,357 @@ namespace KTLib
         ReleaseDC(NULL, hdc);
 
         return colorBuffer;
+    }
+
+    HDC ColorBuffer::ToHDC(int width, int height) const
+    {
+        width = (width <= 0) ? m_width : width;
+        height = (height <= 0) ? m_height : height;
+
+        HDC hdc = CreateCompatibleDC(NULL);
+
+        BITMAPINFO bmi = {};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height;  // Top-down DIB
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        void* pBits;
+        HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
+        SelectObject(hdc, hBitmap);
+
+        BYTE* pixels = (BYTE*)pBits;
+        for (int i = 0; i < width * height; ++i)
+        {
+            int x = i % width;
+            int y = i / width;
+            int srcX = x * m_width / width;
+            int srcY = y * m_height / height;
+            const Color& color = Get(srcX, srcY);
+
+            int index = i * 4;
+            pixels[index] = color.GetBlue();
+            pixels[index + 1] = color.GetGreen();
+            pixels[index + 2] = color.GetRed();
+            pixels[index + 3] = color.GetAlpha();
+        }
+
+        return hdc;
+    }
+
+    ColorBuffer* ColorBuffer::FromHDC(HDC hdc, int x, int y, int width, int height)
+    {
+        if (width == 0) width = GetDeviceCaps(hdc, HORZRES) - x;
+        if (height == 0) height = GetDeviceCaps(hdc, VERTRES) - y;
+
+        HDC memDC = CreateCompatibleDC(NULL);
+        HBITMAP hBitmap = CreateCompatibleBitmap(hdc, width, height);
+        HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, hBitmap);
+
+        BitBlt(memDC, 0, 0, width, height, hdc, x, y, SRCCOPY);
+
+        BITMAPINFOHEADER bi = { };
+        bi.biSize = sizeof(BITMAPINFOHEADER);
+        bi.biWidth = width;
+        bi.biHeight = -height;
+        bi.biPlanes = 1;
+        bi.biBitCount = 32;
+        bi.biCompression = BI_RGB;
+
+        BYTE* bits = new BYTE[width * height * 4];
+        GetDIBits(memDC, hBitmap, 0, height, bits, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
+
+        ColorBuffer* buffer = new ColorBuffer(width, height);
+        #pragma omp parallel for
+        for (int i = 0; i < width * height; ++i) {
+            int index = i * 4;
+            buffer->SetAt(i, Color(
+                bits[index + 2],
+                bits[index + 1],
+                bits[index],
+                255
+            ));
+        }
+
+        delete[] bits;
+        SelectObject(memDC, oldBitmap);
+        DeleteObject(hBitmap);
+        DeleteDC(memDC);
+
+        return buffer;
+    }
+
+    HICON ColorBuffer::ToHICON(int width, int height) const
+    {
+        width = (width <= 0) ? m_width : width;
+        height = (height <= 0) ? m_height : height;
+
+        // Create color and mask bitmaps
+        BITMAPV5HEADER bi = {};
+        bi.bV5Size = sizeof(BITMAPV5HEADER);
+        bi.bV5Width = width;
+        bi.bV5Height = -height;  // Top-down
+        bi.bV5Planes = 1;
+        bi.bV5BitCount = 32;
+        bi.bV5Compression = BI_BITFIELDS;
+        bi.bV5RedMask = 0x00FF0000;
+        bi.bV5GreenMask = 0x0000FF00;
+        bi.bV5BlueMask = 0x000000FF;
+        bi.bV5AlphaMask = 0xFF000000;
+
+        void* pBits;
+        HDC hdc = GetDC(NULL);
+        HBITMAP hColor = CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, &pBits, NULL, 0);
+        BYTE* pixels = (BYTE*)pBits;
+
+        // Create mask bitmap (monochrome)
+        HBITMAP hMask = CreateBitmap(width, height, 1, 1, NULL);
+
+        // Fill color bitmap with our image data
+        for (int i = 0; i < width * height; ++i)
+        {
+            int x = i % width;
+            int y = i / width;
+            int srcX = x * m_width / width;
+            int srcY = y * m_height / height;
+            const Color& color = Get(srcX, srcY);
+
+            int index = i * 4;
+            pixels[index] = color.GetBlue();
+            pixels[index + 1] = color.GetGreen();
+            pixels[index + 2] = color.GetRed();
+            pixels[index + 3] = color.GetAlpha();
+        }
+
+        ICONINFO ii = {};
+        ii.fIcon = TRUE;
+        ii.hbmMask = hMask;
+        ii.hbmColor = hColor;
+
+        HICON hIcon = CreateIconIndirect(&ii);
+
+        DeleteObject(hColor);
+        DeleteObject(hMask);
+        ReleaseDC(NULL, hdc);
+
+        return hIcon;
+    }
+
+    ColorBuffer* ColorBuffer::FromHICON(HICON hIcon)
+    {
+        ICONINFO ii;
+        if (!GetIconInfo(hIcon, &ii))
+            return nullptr;
+
+        BITMAP bm;
+        GetObject(ii.hbmColor, sizeof(BITMAP), &bm);
+        int width = bm.bmWidth;
+        int height = bm.bmHeight;
+
+        HDC hdc = GetDC(NULL);
+        HDC memDC = CreateCompatibleDC(hdc);
+
+        BITMAPINFO bmi = {};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        void* pBits;
+        HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
+        SelectObject(memDC, hBitmap);
+
+        DrawIconEx(memDC, 0, 0, hIcon, width, height, 0, NULL, DI_NORMAL);
+
+        BYTE* pixels = (BYTE*)pBits;
+        ColorBuffer* buffer = new ColorBuffer(width, height);
+
+        for (int i = 0; i < width * height; ++i)
+        {
+            int index = i * 4;
+            buffer->SetAt(i, Color(
+                pixels[index + 2],  // Red
+                pixels[index + 1],  // Green
+                pixels[index],      // Blue
+                pixels[index + 3]   // Alpha
+            ));
+        }
+
+        DeleteObject(hBitmap);
+        DeleteDC(memDC);
+        ReleaseDC(NULL, hdc);
+        DeleteObject(ii.hbmColor);
+        DeleteObject(ii.hbmMask);
+
+        return buffer;
+    }
+
+    HCURSOR ColorBuffer::ToHCURSOR(int width, int height) const
+    {
+        width = (width <= 0) ? m_width : width;
+        height = (height <= 0) ? m_height : height;
+
+        BITMAPV5HEADER bi = {};
+        bi.bV5Size = sizeof(BITMAPV5HEADER);
+        bi.bV5Width = width;
+        bi.bV5Height = -height;  // Top-down
+        bi.bV5Planes = 1;
+        bi.bV5BitCount = 32;
+        bi.bV5Compression = BI_BITFIELDS;
+        bi.bV5RedMask = 0x00FF0000;
+        bi.bV5GreenMask = 0x0000FF00;
+        bi.bV5BlueMask = 0x000000FF;
+        bi.bV5AlphaMask = 0xFF000000;
+
+        void* pBits;
+        HDC hdc = GetDC(NULL);
+        HBITMAP hColor = CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, &pBits, NULL, 0);
+        BYTE* pixels = (BYTE*)pBits;
+
+        HBITMAP hMask = CreateBitmap(width, height, 1, 1, NULL);
+
+        for (int i = 0; i < width * height; ++i)
+        {
+            int x = i % width;
+            int y = i / width;
+            int srcX = x * m_width / width;
+            int srcY = y * m_height / height;
+            const Color& color = Get(srcX, srcY);
+
+            int index = i * 4;
+            pixels[index] = color.GetBlue();
+            pixels[index + 1] = color.GetGreen();
+            pixels[index + 2] = color.GetRed();
+            pixels[index + 3] = color.GetAlpha();
+        }
+
+        ICONINFO ii = {};
+        ii.fIcon = FALSE;
+        ii.xHotspot = width / 2;
+        ii.yHotspot = height / 2;
+        ii.hbmMask = hMask;
+        ii.hbmColor = hColor;
+
+        HCURSOR hCursor = CreateIconIndirect(&ii);
+
+        DeleteObject(hColor);
+        DeleteObject(hMask);
+        ReleaseDC(NULL, hdc);
+
+        return hCursor;
+    }
+
+    ColorBuffer* ColorBuffer::FromHCURSOR(HCURSOR hCursor)
+    {
+        ICONINFO ii;
+        if (!GetIconInfo(hCursor, &ii))
+            return nullptr;
+
+        BITMAP bm;
+        GetObject(ii.hbmColor, sizeof(BITMAP), &bm);
+        int width = bm.bmWidth;
+        int height = bm.bmHeight;
+
+        HDC hdc = GetDC(NULL);
+        HDC memDC = CreateCompatibleDC(hdc);
+
+        BITMAPINFO bmi = {};
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height;
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        void* pBits;
+        HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, NULL, 0);
+        SelectObject(memDC, hBitmap);
+
+        DrawIconEx(memDC, 0, 0, hCursor, width, height, 0, NULL, DI_NORMAL);
+
+        BYTE* pixels = (BYTE*)pBits;
+        ColorBuffer* buffer = new ColorBuffer(width, height);
+
+        for (int i = 0; i < width * height; ++i)
+        {
+            int index = i * 4;
+            buffer->SetAt(i, Color(
+                pixels[index + 2],  // Red
+                pixels[index + 1],  // Green
+                pixels[index],      // Blue
+                pixels[index + 3]   // Alpha
+            ));
+        }
+
+        DeleteObject(hBitmap);
+        DeleteDC(memDC);
+        ReleaseDC(NULL, hdc);
+        DeleteObject(ii.hbmColor);
+        DeleteObject(ii.hbmMask);
+
+        return buffer;
+    }
+
+    ColorBuffer* ColorBuffer::FromHWND(HWND hwnd, int x, int y, int width, int height)
+    {
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        if (width == 0) width = clientRect.right - x;
+        if (height == 0) height = clientRect.bottom - y;
+
+        HDC windowDC = GetDCEx(hwnd, NULL, DCX_WINDOW | DCX_CACHE);
+        HDC memDC = CreateCompatibleDC(windowDC);
+        HBITMAP hBitmap = CreateCompatibleBitmap(windowDC, width + x, height + y);
+        HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, hBitmap);
+
+        PrintWindow(hwnd, memDC, PW_RENDERFULLCONTENT | PW_CLIENTONLY);
+
+        // Create a second DC for the offset region
+        HDC offsetDC = CreateCompatibleDC(windowDC);
+        HBITMAP offsetBitmap = CreateCompatibleBitmap(windowDC, width, height);
+        HBITMAP oldOffsetBitmap = (HBITMAP)SelectObject(offsetDC, offsetBitmap);
+
+        // Copy the region at offset x,y to our final bitmap
+        BitBlt(offsetDC, 0, 0, width, height, memDC, x, y, SRCCOPY);
+
+        BITMAPINFOHEADER bi = { };
+        bi.biSize = sizeof(BITMAPINFOHEADER);
+        bi.biWidth = width;
+        bi.biHeight = -height;
+        bi.biPlanes = 1;
+        bi.biBitCount = 32;
+        bi.biCompression = BI_RGB;
+
+        BYTE* bits = new BYTE[width * height * 4];
+        GetDIBits(offsetDC, offsetBitmap, 0, height, bits, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
+
+        ColorBuffer* buffer = new ColorBuffer(width, height);
+        #pragma omp parallel for
+        for (int i = 0; i < width * height; ++i)
+        {
+            int index = i * 4;
+            buffer->SetAt(i, Color(
+                bits[index + 2],
+                bits[index + 1],
+                bits[index],
+                255
+            ));
+        }
+
+        delete[] bits;
+        SelectObject(offsetDC, oldOffsetBitmap);
+        SelectObject(memDC, oldBitmap);
+        DeleteObject(offsetBitmap);
+        DeleteObject(hBitmap);
+        DeleteDC(offsetDC);
+        DeleteDC(memDC);
+        ReleaseDC(hwnd, windowDC);
+
+        return buffer;
     }
 
     void ColorBuffer::Draw(HWND hwnd, int x, int y) const

@@ -10,8 +10,21 @@ extern "C"
     COLOR_API ColorBuffer* CreateColorBufferFromArray(Color** colors, int width, int height);
     COLOR_API ColorBuffer* CreateColorBufferFromWHC(int width, int height, Color* defaultColor);
     COLOR_API ColorBuffer* CreateColorBufferFromBuffer(unsigned int* buffer, int width, int height);
-    COLOR_API ColorBuffer* CreateColorBufferFromHBITMAP(HBITMAP hBitmap, int targetWidth, int targetHeight);
     COLOR_API ColorBuffer* CreateColorBufferFromGradient(Gradient* gradient, int width, int height);
+
+    COLOR_API HBITMAP ExportColorBufferAsHBITMAP(ColorBuffer* buffer, int targetWidth, int targetHeight);
+    COLOR_API ColorBuffer* CreateColorBufferFromHBITMAP(HBITMAP hBitmap, int width, int height);
+
+    COLOR_API HDC ExportColorBufferAsHDC(ColorBuffer* buffer, int targetWidth, int targetHeight);
+    COLOR_API ColorBuffer* CreateColorBufferFromHDC(HDC hdc, int x, int y, int width, int height);
+
+    COLOR_API HICON ExportColorBufferAsHICON(ColorBuffer* buffer, int targetWidth, int targetHeight);
+    COLOR_API ColorBuffer* CreateColorBufferFromHICON(HICON hIcon);
+
+    COLOR_API HCURSOR ExportColorBufferAsHCURSOR(ColorBuffer* buffer, int targetWidth, int targetHeight);
+    COLOR_API ColorBuffer* CreateColorBufferFromHCURSOR(HCURSOR hCursor);
+
+    COLOR_API ColorBuffer* CreateColorBufferFromHWND(HWND hWnd, int x, int y, int width, int height);
     #pragma endregion
 
     #pragma region ColorBuffer Functions
@@ -93,6 +106,7 @@ extern "C"
 
     COLOR_API int ColorBufferFind(ColorBuffer* buffer, Color* color);
     COLOR_API int ColorBufferFindLast(ColorBuffer* buffer, Color* color);
+    COLOR_API size_t ColorBufferCountUniqueColors(ColorBuffer* buffer);
     COLOR_API void ColorBufferForEach(ColorBuffer* buffer, void (*func)(Color*));
     COLOR_API void ColorBufferSwap(ColorBuffer* buffer, int index1, int index2);
     COLOR_API ColorBuffer* ColorBufferFilter(ColorBuffer* buffer, bool (*predicate)(Color*));
@@ -104,13 +118,7 @@ extern "C"
     COLOR_API void ColorBufferAppendBottom(ColorBuffer* buffer, ColorBuffer* other);
     COLOR_API void MapColorsInBuffer(ColorBuffer* buffer, int x, int y, int width, int height, void* mapFunction);
     COLOR_API int* ColorBufferFindAll(ColorBuffer* buffer, Color* color, int* count);
-    COLOR_API void ColorBufferApplyMatrix(ColorBuffer* buffer,
-        double m11, double m12, double m13, double m14, double m15,
-        double m21, double m22, double m23, double m24, double m25,
-        double m31, double m32, double m33, double m34, double m35,
-        double m41, double m42, double m43, double m44, double m45,
-        double m51, double m52, double m53, double m54, double m55);
-    COLOR_API HBITMAP ExportColorBufferAsHBitmap(ColorBuffer* buffer, int targetWidth, int targetHeight);
+    COLOR_API void ColorBufferApplyMatrix(ColorBuffer* buffer, ColorMatrix* matrix);
     COLOR_API void DrawColorBuffer(ColorBuffer* buffer, HWND hwnd, int x, int y);
     #pragma endregion
 }

@@ -1,5 +1,8 @@
 #Requires AutoHotkey v2.0
 
+/**
+ * Automatically loads and unloads `Color.dll` when the script is initialized.
+ */
 class __ColorLib
 {
     static hModule := 0
@@ -8,11 +11,8 @@ class __ColorLib
     {
         dll_path := StrReplace(A_LineFile, ".ahk", ".dll")
         if FileExist(dll_path) and not __ColorLib.hModule
-        {
-            __ColorLib.hModule := DllCall("LoadLibrary", "Str", dll_path, "Ptr")
-            if not __ColorLib.hModule
+            if not (__ColorLib.hModule := DllCall("LoadLibrary", "Str", dll_path, "Ptr"))
                 throw Error("Failed to load Color.dll, please verify it is in the same folder as Color.ahk")
-        }
     }
 
     static __Delete()
@@ -20,10 +20,13 @@ class __ColorLib
         if __ColorLib.hModule
             DllCall("FreeLibrary", "Ptr", __ColorLib.hModule)
         else
-            throw Error("Color.dll not unloaded successfully")
+            throw Error("Color.dll failed to unload successfully.")
     }
 }
 
+/**
+ * Represents a color. Stored in 32-Bit ARGB format.
+ */
 class Color
 {
     /**
@@ -54,6 +57,9 @@ class Color
             default:
                 throw Error("Color Constructor: Invalid Color arguments")
         }
+
+        this.TypeString := "RGB"
+        this.FormatString := "rgba({R}, {G}, {B}, {A})"
     }
 
     /**
@@ -102,6 +108,16 @@ class Color
     }
 
     /**
+     * Gets or sets the ARGB value of the color (0xAARRGGBB)
+     * @type {Number}
+     */
+    ARGB
+    {
+        get => DllCall("Color\GetColorARGB", "Ptr", this.Ptr, "Int")
+        set => DllCall("Color\SetColorARGB", "Ptr", this.Ptr, "Int", value)
+    }
+
+    /**
      * Gets or sets the format string used for color representation.
      *
      * Default is `rgba({R}, {G}, {B}, {A})`
@@ -114,14 +130,27 @@ class Color
     }
 
     /**
+     * Gets or sets the format string used for color representation.
+     *
+     * Default is `RGB`
+     * @type {string}
+     */
+    TypeString
+    {
+        get => StrGet(DllCall("Color\GetColorTypeString", "Ptr", this.Ptr, "Ptr"), "UTF-8")
+        set => DllCall("Color\SetColorTypeString", "Ptr", this.Ptr, "Str", value)
+    }
+
+    /**
      * Gets the Full RGB string representation of the color.
      * ___
      * Example: `rgba(255, 34, 96, 128)`
      * ___
+     * The type is controlled by `this.TypeString`
      * The format is controlled by `this.FormatString`
      * @type {Number}
      */
-    Full  => this.ToString("RGB", this.FormatString)
+    Full  => this.ToString(this.TypeString, this.FormatString)
 
     /**
      * Converts the color to an integer value.
@@ -140,43 +169,51 @@ class Color
      * `4` : `0xRRGGBBAA`
      *
      * `5` : `0xBBGGRRAA`
+     * ---
+     * @returns {Integer} - The requested value.
      */
     ToInt(format  := 0) => DllCall("Color\ColorToInt", "Ptr", this.Ptr, "Int", format, "UInt")
 
     /**
      * Converts the color to a string representation.
-     * @param {string} type - The color space type (e.g., "RGB", "Hex", "HSL", "HWB", "XYZ", "Lab", "YIQ", "NCol", "CMYK", "HSV", "YPbPr", "LCHab", "LCHuv", "AdobeRGB", "ProPhotoRGB", "Luv").
-     * @param {string} [format] - The format string to use. If not provided, uses the default format for the specified type.
-     * @returns {string}
+     * @param {String} type - The color space type (e.g.: `RGB`, `Hex`, `HSL`, `HWB`, `XYZ`, `Lab`, `...`)
+     * @param {String} [format] - The format string to use. If not provided, uses the default format for the specified type.
+     * ___
+     * @returns {String} - The converted String representation.
+     * ___
+     * @example <caption>Converting a Color to a YPbPr String, with each channel rounded to 3 decimal places. Note that Formatters are case-insensitive.</caption>
+     * col.ToString("YPbPr", "Y: {y:3}`nPb: {Pb:3}`nPr: {pR:3}")
      */
     ToString(type, format := this.FormatString)
     {
         if format == ""
         {
-            switch type
+            switch StrLower(type)
             {
-                case "RGB":         format := Color.DefaultFormatString.RGB
-                case "LinearSRGB":  format := Color.DefaultFormatString.LinearSRGB
-                case "HEX":         format := Color.DefaultFormatString.Hex
-                case "HSL":         format := Color.DefaultFormatString.HSL
-                case "HWB":         format := Color.DefaultFormatString.HWB
-                case "XYZ_D50":     format := Color.DefaultFormatString.XYZ_D50
-                case "XYZ_D65":     format := Color.DefaultFormatString.XYZ_D65
-                case "Lab":         format := Color.DefaultFormatString.Lab
-                case "YIQ":         format := Color.DefaultFormatString.YIQ
-                case "NCol":        format := Color.DefaultFormatString.NCol
-                case "CMYK":        format := Color.DefaultFormatString.CMYK
-                case "HSV":         format := Color.DefaultFormatString.HSV
-                case "YPbPr":       format := Color.DefaultFormatString.YPbPr
-                case "LCHab":       format := Color.DefaultFormatString.LCHab
-                case "LCHuv":       format := Color.DefaultFormatString.LCHuv
-                case "AdobeRGB":    format := Color.DefaultFormatString.AdobeRGB
-                case "ProPhotoRGB": format := Color.DefaultFormatString.ProPhotoRGB
-                case "Luv":         format := Color.DefaultFormatString.Luv
-                case "Rec2020":     format := Color.DefaultFormatString.Rec2020
-                case "DisplayP3":   format := Color.DefaultFormatString.DisplayP3
-                case "OKLCH":       format := Color.DefaultFormatString.OKLCH
-                case "OKLab":       format := Color.DefaultFormatString.OKLab
+                case "rgb":         format := Color.DefaultFormatString.RGB
+                case "linearsrgb":  format := Color.DefaultFormatString.LinearSRGB
+                case "hex":         format := Color.DefaultFormatString.Hex
+                case "hsl":         format := Color.DefaultFormatString.HSL
+                case "hsi":         format := Color.DefaultFormatString.HSI
+                case "hwb":         format := Color.DefaultFormatString.HWB
+                case "hsp":         format := Color.DefaultFormatString.HSP
+                case "xyz_d50":     format := Color.DefaultFormatString.XYZ_D50
+                case "xyz_d65":     format := Color.DefaultFormatString.XYZ_D65
+                case "lab":         format := Color.DefaultFormatString.Lab
+                case "yiq":         format := Color.DefaultFormatString.YIQ
+                case "ncol":        format := Color.DefaultFormatString.NCol
+                case "cmyk":        format := Color.DefaultFormatString.CMYK
+                case "hsv":         format := Color.DefaultFormatString.HSV
+                case "ypbpr":       format := Color.DefaultFormatString.YPbPr
+                case "lchab":       format := Color.DefaultFormatString.LCHab
+                case "lchuv":       format := Color.DefaultFormatString.LCHuv
+                case "adobergb":    format := Color.DefaultFormatString.AdobeRGB
+                case "prophotorgb": format := Color.DefaultFormatString.ProPhotoRGB
+                case "luv":         format := Color.DefaultFormatString.Luv
+                case "rec2020":     format := Color.DefaultFormatString.Rec2020
+                case "displayp3":   format := Color.DefaultFormatString.DisplayP3
+                case "oklch":       format := Color.DefaultFormatString.OKLCH
+                case "oklab":       format := Color.DefaultFormatString.OKLab
             }
         }
 
@@ -188,6 +225,32 @@ class Color
         DllCall("Color\ColorToString", "Ptr", this.Ptr, "Ptr", typeBuf, "Ptr", formatBuf, "Ptr", fullStr, "Cdecl")
         return StrGet(fullStr, "UTF-8")
     }
+
+    /**
+     * Converts the Color to a COLORREF and returns a pointer to it.
+     * @returns {Integer}
+     */
+    ToCOLORREF() => DllCall("Color\ColorToCOLORREF", "Ptr", this.Ptr, "UInt")
+
+    /**
+     * Creates a Color instance from a COLORREF
+     * @param colorref - A pointer to a COLORREF instance.
+     * @returns {Color}
+     */
+    static FromCOLORREF(colorref) => Color.FromPtr(DllCall("Color\ColorFromCOLORREF", "UInt", colorref, "Ptr"))
+
+    /**
+     * Converts the Color to a GDI+ Color and returns a pointer to it.
+     * @returns {Integer}
+     */
+    ToGdipColor() => DllCall("Color\ColorToGdipColor", "Ptr", this.Ptr, "UInt64")
+
+    /**
+     * Creates a Color instance from a GDI+ Color
+     * @param colorref - A pointer to a GDI+ Color instance.
+     * @returns {Color}
+     */
+    static FromGdipColor(gdipColor) => Color.FromPtr(DllCall("Color\ColorFromGdipColor", "UInt64", gdipColor, "Ptr"))
 
     /**
      * Compares this color with another color for equality.
@@ -202,156 +265,454 @@ class Color
      */
     static Random(alphaRand := true) => Color.FromPtr(DllCall("Color\CreateRandomColor", "Int", alphaRand, "Ptr"))
 
+    /** `AliceBlue = Color(0xFFF0F8FF)` */
     static AliceBlue => Color.FromPtr(DllCall("Color\CreateAliceBlueColor", "Ptr"))
+
+    /** `AntiqueWhite = Color(0xFFFAEBD7)` */
     static AntiqueWhite => Color.FromPtr(DllCall("Color\CreateAntiqueWhiteColor", "Ptr"))
+
+    /** `Aqua = Color(0xFF00FFFF)` */
     static Aqua => Color.FromPtr(DllCall("Color\CreateAquaColor", "Ptr"))
+
+    /** `Aquamarine = Color(0xFF7FFFD4)` */
     static Aquamarine => Color.FromPtr(DllCall("Color\CreateAquamarineColor", "Ptr"))
+
+    /** `Azure = Color(0xFFF0FFFF)` */
     static Azure => Color.FromPtr(DllCall("Color\CreateAzureColor", "Ptr"))
+
+    /** `Beige = Color(0xFFF5F5DC)` */
     static Beige => Color.FromPtr(DllCall("Color\CreateBeigeColor", "Ptr"))
+
+    /** `Bisque = Color(0xFFFFE4C4)` */
     static Bisque => Color.FromPtr(DllCall("Color\CreateBisqueColor", "Ptr"))
+
+    /** `Black = Color(0xFF000000)` */
     static Black => Color.FromPtr(DllCall("Color\CreateBlackColor", "Ptr"))
+
+    /** `BlackTransparent = Color(0x00000000)` */
     static BlackTransparent => Color.FromPtr(DllCall("Color\CreateBlackTransparentColor", "Ptr"))
+
+    /** `BlanchedAlmond = Color(0xFFFFEBCD)` */
     static BlanchedAlmond => Color.FromPtr(DllCall("Color\CreateBlanchedAlmondColor", "Ptr"))
+
+    /** `Blue = Color(0xFF0000FF)` */
     static Blue => Color.FromPtr(DllCall("Color\CreateBlueColor", "Ptr"))
+
+    /** `BlueViolet = Color(0xFF8A2BE2)` */
     static BlueViolet => Color.FromPtr(DllCall("Color\CreateBlueVioletColor", "Ptr"))
+
+    /** `Brown = Color(0xFFA52A2A)` */
     static Brown => Color.FromPtr(DllCall("Color\CreateBrownColor", "Ptr"))
+
+    /** `BurlyWood = Color(0xFFDEB887)` */
     static BurlyWood => Color.FromPtr(DllCall("Color\CreateBurlyWoodColor", "Ptr"))
+
+    /** `CadetBlue = Color(0xFF5F9EA0)` */
     static CadetBlue => Color.FromPtr(DllCall("Color\CreateCadetBlueColor", "Ptr"))
+
+    /** `Chartreuse = Color(0xFF7FFF00)` */
     static Chartreuse => Color.FromPtr(DllCall("Color\CreateChartreuseColor", "Ptr"))
+
+    /** `Chocolate = Color(0xFFD2691E)` */
     static Chocolate => Color.FromPtr(DllCall("Color\CreateChocolateColor", "Ptr"))
+
+    /** `Coral = Color(0xFFFF7F50)` */
     static Coral => Color.FromPtr(DllCall("Color\CreateCoralColor", "Ptr"))
+
+    /** `CornflowerBlue = Color(0xFF6495ED)` */
     static CornflowerBlue => Color.FromPtr(DllCall("Color\CreateCornflowerBlueColor", "Ptr"))
+
+    /** `Cornsilk = Color(0xFFFFF8DC)` */
     static Cornsilk => Color.FromPtr(DllCall("Color\CreateCornsilkColor", "Ptr"))
+
+    /** `Crimson = Color(0xFFDC143C)` */
     static Crimson => Color.FromPtr(DllCall("Color\CreateCrimsonColor", "Ptr"))
+
+    /** `Cyan = Color(0xFF00FFFF)` */
     static Cyan => Color.FromPtr(DllCall("Color\CreateCyanColor", "Ptr"))
+
+    /** `DarkBlue = Color(0xFF00008B)` */
     static DarkBlue => Color.FromPtr(DllCall("Color\CreateDarkBlueColor", "Ptr"))
+
+    /** `DarkCyan = Color(0xFF008B8B)` */
     static DarkCyan => Color.FromPtr(DllCall("Color\CreateDarkCyanColor", "Ptr"))
+
+    /** `DarkGoldenRod = Color(0xFFB8860B)` */
     static DarkGoldenRod => Color.FromPtr(DllCall("Color\CreateDarkGoldenRodColor", "Ptr"))
+
+    /** `DarkGray = Color(0xFFA9A9A9)` */
     static DarkGray => Color.FromPtr(DllCall("Color\CreateDarkGrayColor", "Ptr"))
+
+    /** `DarkGrey = Color(0xFFA9A9A9)` */
     static DarkGrey => Color.FromPtr(DllCall("Color\CreateDarkGreyColor", "Ptr"))
+
+    /** `DarkGreen = Color(0xFF006400)` */
     static DarkGreen => Color.FromPtr(DllCall("Color\CreateDarkGreenColor", "Ptr"))
+
+    /** `DarkKhaki = Color(0xFFBDB76B)` */
     static DarkKhaki => Color.FromPtr(DllCall("Color\CreateDarkKhakiColor", "Ptr"))
+
+    /** `DarkMagenta = Color(0xFF8B008B)` */
     static DarkMagenta => Color.FromPtr(DllCall("Color\CreateDarkMagentaColor", "Ptr"))
+
+    /** `DarkOliveGreen = Color(0xFF556B2F)` */
     static DarkOliveGreen => Color.FromPtr(DllCall("Color\CreateDarkOliveGreenColor", "Ptr"))
+
+    /** `DarkOrange = Color(0xFFFF8C00)` */
     static DarkOrange => Color.FromPtr(DllCall("Color\CreateDarkOrangeColor", "Ptr"))
+
+    /** `DarkOrchid = Color(0xFF9932CC)` */
     static DarkOrchid => Color.FromPtr(DllCall("Color\CreateDarkOrchidColor", "Ptr"))
+
+    /** `DarkRed = Color(0xFF8B0000)` */
     static DarkRed => Color.FromPtr(DllCall("Color\CreateDarkRedColor", "Ptr"))
+
+    /** `DarkSalmon = Color(0xFFE9967A)` */
     static DarkSalmon => Color.FromPtr(DllCall("Color\CreateDarkSalmonColor", "Ptr"))
+
+    /** `DarkSeaGreen = Color(0xFF8FBC8F)` */
     static DarkSeaGreen => Color.FromPtr(DllCall("Color\CreateDarkSeaGreenColor", "Ptr"))
+
+    /** `DarkSlateBlue = Color(0xFF483D8B)` */
     static DarkSlateBlue => Color.FromPtr(DllCall("Color\CreateDarkSlateBlueColor", "Ptr"))
+
+    /** `DarkSlateGray = Color(0xFF2F4F4F)` */
     static DarkSlateGray => Color.FromPtr(DllCall("Color\CreateDarkSlateGrayColor", "Ptr"))
+
+    /** `DarkSlateGrey = Color(0xFF2F4F4F)` */
     static DarkSlateGrey => Color.FromPtr(DllCall("Color\CreateDarkSlateGreyColor", "Ptr"))
+
+    /** `DarkTurquoise = Color(0xFF00CED1)` */
     static DarkTurquoise => Color.FromPtr(DllCall("Color\CreateDarkTurquoiseColor", "Ptr"))
+
+    /** `DarkViolet = Color(0xFF9400D3)` */
     static DarkViolet => Color.FromPtr(DllCall("Color\CreateDarkVioletColor", "Ptr"))
+
+    /** `DeepPink = Color(0xFFFF1493)` */
     static DeepPink => Color.FromPtr(DllCall("Color\CreateDeepPinkColor", "Ptr"))
+
+    /** `DeepSkyBlue = Color(0xFF00BFFF)` */
     static DeepSkyBlue => Color.FromPtr(DllCall("Color\CreateDeepSkyBlueColor", "Ptr"))
+
+    /** `DimGray = Color(0xFF696969)` */
     static DimGray => Color.FromPtr(DllCall("Color\CreateDimGrayColor", "Ptr"))
+
+    /** `DimGrey = Color(0xFF696969)` */
     static DimGrey => Color.FromPtr(DllCall("Color\CreateDimGreyColor", "Ptr"))
+
+    /** `DodgerBlue = Color(0xFF1E90FF)` */
     static DodgerBlue => Color.FromPtr(DllCall("Color\CreateDodgerBlueColor", "Ptr"))
+
+    /** `FireBrick = Color(0xFFB22222)` */
     static FireBrick => Color.FromPtr(DllCall("Color\CreateFireBrickColor", "Ptr"))
+
+    /** `FloralWhite = Color(0xFFFFFAF0)` */
     static FloralWhite => Color.FromPtr(DllCall("Color\CreateFloralWhiteColor", "Ptr"))
+
+    /** `ForestGreen = Color(0xFF228B22)` */
     static ForestGreen => Color.FromPtr(DllCall("Color\CreateForestGreenColor", "Ptr"))
+
+    /** `Fuchsia = Color(0xFFFF00FF)` */
     static Fuchsia => Color.FromPtr(DllCall("Color\CreateFuchsiaColor", "Ptr"))
+
+    /** `Gainsboro = Color(0xFFDCDCDC)` */
     static Gainsboro => Color.FromPtr(DllCall("Color\CreateGainsboroColor", "Ptr"))
+
+    /** `GhostWhite = Color(0xFFF8F8FF)` */
     static GhostWhite => Color.FromPtr(DllCall("Color\CreateGhostWhiteColor", "Ptr"))
+
+    /** `Gold = Color(0xFFFFD700)` */
     static Gold => Color.FromPtr(DllCall("Color\CreateGoldColor", "Ptr"))
+
+    /** `GoldenRod = Color(0xFFDAA520)` */
     static GoldenRod => Color.FromPtr(DllCall("Color\CreateGoldenRodColor", "Ptr"))
+
+    /** `Gray = Color(0xFF808080)` */
     static Gray => Color.FromPtr(DllCall("Color\CreateGrayColor", "Ptr"))
+
+    /** `Grey = Color(0xFF808080)` */
     static Grey => Color.FromPtr(DllCall("Color\CreateGreyColor", "Ptr"))
+
+    /** `Green = Color(0xFF008000)` */
     static Green => Color.FromPtr(DllCall("Color\CreateGreenColor", "Ptr"))
+
+    /** `GreenYellow = Color(0xFFADFF2F)` */
     static GreenYellow => Color.FromPtr(DllCall("Color\CreateGreenYellowColor", "Ptr"))
+
+    /** `Honeydew = Color(0xFFF0FFF0)` */
     static Honeydew => Color.FromPtr(DllCall("Color\CreateHoneydewColor", "Ptr"))
+
+    /** `HotPink = Color(0xFFFF69B4)` */
     static HotPink => Color.FromPtr(DllCall("Color\CreateHotPinkColor", "Ptr"))
+
+    /** `IndianRed = Color(0xFFCD5C5C)` */
     static IndianRed => Color.FromPtr(DllCall("Color\CreateIndianRedColor", "Ptr"))
+
+    /** `Indigo = Color(0xFF4B0082)` */
     static Indigo => Color.FromPtr(DllCall("Color\CreateIndigoColor", "Ptr"))
+
+    /** `Ivory = Color(0xFFFFFFF0)` */
     static Ivory => Color.FromPtr(DllCall("Color\CreateIvoryColor", "Ptr"))
+
+    /** `Khaki = Color(0xFFF0E68C)` */
     static Khaki => Color.FromPtr(DllCall("Color\CreateKhakiColor", "Ptr"))
+
+    /** `Lavender = Color(0xFFE6E6FA)` */
     static Lavender => Color.FromPtr(DllCall("Color\CreateLavenderColor", "Ptr"))
+
+    /** `LavenderBlush = Color(0xFFFFF0F5)` */
     static LavenderBlush => Color.FromPtr(DllCall("Color\CreateLavenderBlushColor", "Ptr"))
+
+    /** `LawnGreen = Color(0xFF7CFC00)` */
     static LawnGreen => Color.FromPtr(DllCall("Color\CreateLawnGreenColor", "Ptr"))
+
+    /** `LemonChiffon = Color(0xFFFFFACD)` */
     static LemonChiffon => Color.FromPtr(DllCall("Color\CreateLemonChiffonColor", "Ptr"))
+
+    /** `LightBlue = Color(0xFFADD8E6)` */
     static LightBlue => Color.FromPtr(DllCall("Color\CreateLightBlueColor", "Ptr"))
+
+    /** `LightCoral = Color(0xFFF08080)` */
     static LightCoral => Color.FromPtr(DllCall("Color\CreateLightCoralColor", "Ptr"))
+
+    /** `LightCyan = Color(0xFFE0FFFF)` */
     static LightCyan => Color.FromPtr(DllCall("Color\CreateLightCyanColor", "Ptr"))
+
+    /** `LightGoldenrodYellow = Color(0xFFFAFAD2)` */
     static LightGoldenrodYellow => Color.FromPtr(DllCall("Color\CreateLightGoldenrodYellowColor", "Ptr"))
+
+    /** `LightGray = Color(0xFFD3D3D3)` */
     static LightGray => Color.FromPtr(DllCall("Color\CreateLightGrayColor", "Ptr"))
-    static LightGrey => Color.FromPtr(DllCall("Color\CreateLightGreyColor", "Ptr"))
+
+    /** `LightGreen = Color(0xFF90EE90)` */
     static LightGreen => Color.FromPtr(DllCall("Color\CreateLightGreenColor", "Ptr"))
+
+    /** `LightGrey = Color(0xFFD3D3D3)` */
+    static LightGrey => Color.FromPtr(DllCall("Color\CreateLightGreyColor", "Ptr"))
+
+    /** `LightPink = Color(0xFFFFB6C1)` */
     static LightPink => Color.FromPtr(DllCall("Color\CreateLightPinkColor", "Ptr"))
+
+    /** `LightSalmon = Color(0xFFFFA07A)` */
     static LightSalmon => Color.FromPtr(DllCall("Color\CreateLightSalmonColor", "Ptr"))
+
+    /** `LightSeaGreen = Color(0xFF20B2AA)` */
     static LightSeaGreen => Color.FromPtr(DllCall("Color\CreateLightSeaGreenColor", "Ptr"))
+
+    /** `LightSkyBlue = Color(0xFF87CEFA)` */
     static LightSkyBlue => Color.FromPtr(DllCall("Color\CreateLightSkyBlueColor", "Ptr"))
-    static LightSlateGray => Color.FromPtr(DllCall("Color\CreateLightSlateGrayColor", "Ptr"))
+
+    /** `LightSlateGrey = Color(0xFF778899)` */
     static LightSlateGrey => Color.FromPtr(DllCall("Color\CreateLightSlateGreyColor", "Ptr"))
+
+    /** `LightSteelBlue = Color(0xFFB0C4DE)` */
     static LightSteelBlue => Color.FromPtr(DllCall("Color\CreateLightSteelBlueColor", "Ptr"))
+
+    /** `LightYellow = Color(0xFFFFFFE0)` */
     static LightYellow => Color.FromPtr(DllCall("Color\CreateLightYellowColor", "Ptr"))
+
+    /** `Lime = Color(0xFF00FF00)` */
     static Lime => Color.FromPtr(DllCall("Color\CreateLimeColor", "Ptr"))
+
+    /** `LimeGreen = Color(0xFF32CD32)` */
     static LimeGreen => Color.FromPtr(DllCall("Color\CreateLimeGreenColor", "Ptr"))
+
+    /** `Linen = Color(0xFFFAF0E6)` */
     static Linen => Color.FromPtr(DllCall("Color\CreateLinenColor", "Ptr"))
+
+    /** `Magenta = Color(0xFFFF00FF)` */
     static Magenta => Color.FromPtr(DllCall("Color\CreateMagentaColor", "Ptr"))
+
+    /** `Maroon = Color(0xFF800000)` */
     static Maroon => Color.FromPtr(DllCall("Color\CreateMaroonColor", "Ptr"))
+
+    /** `MediumAquamarine = Color(0xFF66CDAA)` */
     static MediumAquamarine => Color.FromPtr(DllCall("Color\CreateMediumAquamarineColor", "Ptr"))
+
+    /** `MediumBlue = Color(0xFF0000CD)` */
     static MediumBlue => Color.FromPtr(DllCall("Color\CreateMediumBlueColor", "Ptr"))
+
+    /** `MediumOrchid = Color(0xFFBA55D3)` */
     static MediumOrchid => Color.FromPtr(DllCall("Color\CreateMediumOrchidColor", "Ptr"))
+
+    /** `MediumPurple = Color(0xFF9370DB)` */
     static MediumPurple => Color.FromPtr(DllCall("Color\CreateMediumPurpleColor", "Ptr"))
+
+    /** `MediumSeaGreen = Color(0xFF3CB371)` */
     static MediumSeaGreen => Color.FromPtr(DllCall("Color\CreateMediumSeaGreenColor", "Ptr"))
+
+    /** `MediumSlateBlue = Color(0xFF7B68EE)` */
     static MediumSlateBlue => Color.FromPtr(DllCall("Color\CreateMediumSlateBlueColor", "Ptr"))
+
+    /** `MediumSpringGreen = Color(0xFF00FA9A)` */
     static MediumSpringGreen => Color.FromPtr(DllCall("Color\CreateMediumSpringGreenColor", "Ptr"))
+
+    /** `MediumTurquoise = Color(0xFF48D1CC)` */
     static MediumTurquoise => Color.FromPtr(DllCall("Color\CreateMediumTurquoiseColor", "Ptr"))
+
+    /** `MediumVioletRed = Color(0xFFC71585)` */
     static MediumVioletRed => Color.FromPtr(DllCall("Color\CreateMediumVioletRedColor", "Ptr"))
+
+    /** `MidnightBlue = Color(0xFF191970)` */
     static MidnightBlue => Color.FromPtr(DllCall("Color\CreateMidnightBlueColor", "Ptr"))
+
+    /** `MintCream = Color(0xFFF5FFFA)` */
     static MintCream => Color.FromPtr(DllCall("Color\CreateMintCreamColor", "Ptr"))
+
+    /** `MistyRose = Color(0xFFFFE4E1)` */
     static MistyRose => Color.FromPtr(DllCall("Color\CreateMistyRoseColor", "Ptr"))
+
+    /** `Moccasin = Color(0xFFFFE4B5)` */
     static Moccasin => Color.FromPtr(DllCall("Color\CreateMoccasinColor", "Ptr"))
+
+    /** `NavajoWhite = Color(0xFFFFDEAD)` */
     static NavajoWhite => Color.FromPtr(DllCall("Color\CreateNavajoWhiteColor", "Ptr"))
+
+    /** `Navy = Color(0xFF000080)` */
     static Navy => Color.FromPtr(DllCall("Color\CreateNavyColor", "Ptr"))
+
+    /** `OldLace = Color(0xFFFDF5E6)` */
     static OldLace => Color.FromPtr(DllCall("Color\CreateOldLaceColor", "Ptr"))
+
+    /** `Olive = Color(0xFF808000)` */
     static Olive => Color.FromPtr(DllCall("Color\CreateOliveColor", "Ptr"))
+
+    /** `OliveDrab = Color(0xFF6B8E23)` */
     static OliveDrab => Color.FromPtr(DllCall("Color\CreateOliveDrabColor", "Ptr"))
+
+    /** `Orange = Color(0xFFFFA500)` */
     static Orange => Color.FromPtr(DllCall("Color\CreateOrangeColor", "Ptr"))
+
+    /** `OrangeRed = Color(0xFFFF4500)` */
     static OrangeRed => Color.FromPtr(DllCall("Color\CreateOrangeRedColor", "Ptr"))
+
+    /** `Orchid = Color(0xFFDA70D6)` */
     static Orchid => Color.FromPtr(DllCall("Color\CreateOrchidColor", "Ptr"))
+
+    /** `PaleGoldenrod = Color(0xFFEEE8AA)` */
     static PaleGoldenrod => Color.FromPtr(DllCall("Color\CreatePaleGoldenrodColor", "Ptr"))
+
+    /** `PaleGreen = Color(0xFF98FB98)` */
     static PaleGreen => Color.FromPtr(DllCall("Color\CreatePaleGreenColor", "Ptr"))
+
+    /** `PaleTurquoise = Color(0xFFAFEEEE)` */
     static PaleTurquoise => Color.FromPtr(DllCall("Color\CreatePaleTurquoiseColor", "Ptr"))
+
+    /** `PaleVioletRed = Color(0xFFDB7093)` */
     static PaleVioletRed => Color.FromPtr(DllCall("Color\CreatePaleVioletRedColor", "Ptr"))
+
+    /** `PapayaWhip = Color(0xFFFFEFD5)` */
     static PapayaWhip => Color.FromPtr(DllCall("Color\CreatePapayaWhipColor", "Ptr"))
+
+    /** `PeachPuff = Color(0xFFFFDAB9)` */
     static PeachPuff => Color.FromPtr(DllCall("Color\CreatePeachPuffColor", "Ptr"))
+
+    /** `Peru = Color(0xFFCD853F)` */
     static Peru => Color.FromPtr(DllCall("Color\CreatePeruColor", "Ptr"))
+
+    /** `Pink = Color(0xFFFFC0CB)` */
     static Pink => Color.FromPtr(DllCall("Color\CreatePinkColor", "Ptr"))
+
+    /** `Plum = Color(0xFFDDA0DD)` */
     static Plum => Color.FromPtr(DllCall("Color\CreatePlumColor", "Ptr"))
+
+    /** `PowderBlue = Color(0xFFB0E0E6)` */
     static PowderBlue => Color.FromPtr(DllCall("Color\CreatePowderBlueColor", "Ptr"))
+
+    /** `Purple = Color(0xFF800080)` */
     static Purple => Color.FromPtr(DllCall("Color\CreatePurpleColor", "Ptr"))
+
+    /** `RebeccaPurple = Color(0xFF663399)` */
     static RebeccaPurple => Color.FromPtr(DllCall("Color\CreateRebeccaPurpleColor", "Ptr"))
+
+    /** `Red = Color(0xFFFF0000)` */
     static Red => Color.FromPtr(DllCall("Color\CreateRedColor", "Ptr"))
+
+    /** `RosyBrown = Color(0xFFBC8F8F)` */
     static RosyBrown => Color.FromPtr(DllCall("Color\CreateRosyBrownColor", "Ptr"))
+
+    /** `RoyalBlue = Color(0xFF4169E1)` */
     static RoyalBlue => Color.FromPtr(DllCall("Color\CreateRoyalBlueColor", "Ptr"))
+
+    /** `SaddleBrown = Color(0xFF8B4513)` */
     static SaddleBrown => Color.FromPtr(DllCall("Color\CreateSaddleBrownColor", "Ptr"))
+
+    /** `Salmon = Color(0xFFFA8072)` */
     static Salmon => Color.FromPtr(DllCall("Color\CreateSalmonColor", "Ptr"))
+
+    /** `SandyBrown = Color(0xFFF4A460)` */
     static SandyBrown => Color.FromPtr(DllCall("Color\CreateSandyBrownColor", "Ptr"))
+
+    /** `SeaGreen = Color(0xFF2E8B57)` */
     static SeaGreen => Color.FromPtr(DllCall("Color\CreateSeaGreenColor", "Ptr"))
+
+    /** `Seashell = Color(0xFFFFF5EE)` */
     static Seashell => Color.FromPtr(DllCall("Color\CreateSeashellColor", "Ptr"))
+
+    /** `Sienna = Color(0xFFA0522D)` */
     static Sienna => Color.FromPtr(DllCall("Color\CreateSiennaColor", "Ptr"))
+
+    /** `Silver = Color(0xFFC0C0C0)` */
     static Silver => Color.FromPtr(DllCall("Color\CreateSilverColor", "Ptr"))
+
+    /** `SkyBlue = Color(0xFF87CEEB)` */
     static SkyBlue => Color.FromPtr(DllCall("Color\CreateSkyBlueColor", "Ptr"))
+
+    /** `SlateBlue = Color(0xFF6A5ACD)` */
     static SlateBlue => Color.FromPtr(DllCall("Color\CreateSlateBlueColor", "Ptr"))
+
+    /** `SlateGray = Color(0xFF708090)` */
     static SlateGray => Color.FromPtr(DllCall("Color\CreateSlateGrayColor", "Ptr"))
+
+    /** `SlateGrey = Color(0xFF708090)` */
     static SlateGrey => Color.FromPtr(DllCall("Color\CreateSlateGreyColor", "Ptr"))
+
+    /** `Snow = Color(0xFFFFFAFA)` */
     static Snow => Color.FromPtr(DllCall("Color\CreateSnowColor", "Ptr"))
+
+    /** `SpringGreen = Color(0xFF00FF7F)` */
     static SpringGreen => Color.FromPtr(DllCall("Color\CreateSpringGreenColor", "Ptr"))
+
+    /** `SteelBlue = Color(0xFF4682B4)` */
     static SteelBlue => Color.FromPtr(DllCall("Color\CreateSteelBlueColor", "Ptr"))
+
+    /** `Tan = Color(0xFFD2B48C)` */
     static Tan => Color.FromPtr(DllCall("Color\CreateTanColor", "Ptr"))
+
+    /** `Teal = Color(0xFF008080)` */
     static Teal => Color.FromPtr(DllCall("Color\CreateTealColor", "Ptr"))
+
+    /** `Thistle = Color(0xFFD8BFD8)` */
     static Thistle => Color.FromPtr(DllCall("Color\CreateThistleColor", "Ptr"))
+
+    /** `Tomato = Color(0xFFFF6347)` */
     static Tomato => Color.FromPtr(DllCall("Color\CreateTomatoColor", "Ptr"))
+
+    /** `Transparent = Color(0xFF000000)` */
     static Transparent => Color.FromPtr(DllCall("Color\CreateTransparentColor", "Ptr"))
+
+    /** `Turquoise = Color(0xFF40E0D0)` */
     static Turquoise => Color.FromPtr(DllCall("Color\CreateTurquoiseColor", "Ptr"))
+
+    /** `Violet = Color(0xFFEE82EE)` */
     static Violet => Color.FromPtr(DllCall("Color\CreateVioletColor", "Ptr"))
+
+    /** `Wheat = Color(0xFFF5DEB3)` */
     static Wheat => Color.FromPtr(DllCall("Color\CreateWheatColor", "Ptr"))
+
+    /** `White = Color(0xFFFFFFFF)` */
     static White => Color.FromPtr(DllCall("Color\CreateWhiteColor", "Ptr"))
+
+    /** `WhiteSmoke = Color(0xFFF5F5F5)` */
     static WhiteSmoke => Color.FromPtr(DllCall("Color\CreateWhiteSmokeColor", "Ptr"))
+
+    /** `WhiteTransparent = Color(0x00FFFFFF)` */
     static WhiteTransparent => Color.FromPtr(DllCall("Color\CreateWhiteTransparentColor", "Ptr"))
+
+    /** `Yellow = Color(0xFFFFFF00)` */
     static Yellow => Color.FromPtr(DllCall("Color\CreateYellowColor", "Ptr"))
+
+    /** `YellowGreen = Color(0xFF9ACD32)` */
     static YellowGreen => Color.FromPtr(DllCall("Color\CreateYellowGreenColor", "Ptr"))
 
     /**
@@ -363,141 +724,151 @@ class Color
 
     /**
      * Creates a Color object from Adobe RGB values.
-     * @param {number} r - The red value (0-1).
-     * @param {number} g - The green value (0-1).
-     * @param {number} b - The blue value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} r - The red value `(0 to 1)`.
+     * @param {number} g - The green value `(0 to 1)`.
+     * @param {number} b - The blue value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromAdobeRGB(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromAdobeRGB", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from HSL values.
-     * @param {number} h - The hue value (0-360).
-     * @param {number} s - The saturation value (0-100).
-     * @param {number} l - The lightness value (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} s - The saturation value `(0 to 100)`.
+     * @param {number} l - The lightness value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromHSL(h, s, l, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHSL" , "Double", h, "Double", s, "Double", l, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from HSV values.
-     * @param {number} h - The hue value (0-360).
-     * @param {number} s - The saturation value (0-100).
-     * @param {number} v - The value (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} s - The saturation value `(0 to 100)`.
+     * @param {number} v - The value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromHSV(h, s, v, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHSV", "Double", h, "Double", s / 100, "Double", v / 100, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from HSV values.
-     * @param {number} h - The hue value (0-360).
-     * @param {number} s - The saturation value (0-100).
-     * @param {number} i - The intensity (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} s - The saturation value `(0 to 100)`.
+     * @param {number} i - The intensity `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromHSI(h, s, i, a := 255) => Color(DllCall("Color\ColorFromHSI", "Double", h, "Double", s, "Double", i, "Int", a, "Ptr", "Cdecl"))
 
     /**
      * Creates a Color object from HWB values.
-     * @param {number} h - The hue value (0-360).
-     * @param {number} w - The whiteness value (0-100).
-     * @param {number} b - The blackness value (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} w - The whiteness value `(0 to 100)`.
+     * @param {number} b - The blackness value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromHWB(h, w, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHWB" , "Double", h, "Double", w, "Double", b, "Double", a, "Ptr"))
 
     /**
+     * Creates a Color object from HSV values.
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} s - The saturation value `(0 to 100)`.
+     * @param {number} p - The perceived brightness value `(0 to 255)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
+     * @returns {Color}
+     */
+    static FromHSP(h, s, p, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHSP" , "Double", h, "Double", s, "Double", p, "Double", a, "Ptr"))
+
+    /**
      * Creates a Color object from XYZ D50 values.
-     * @param {number} x - The X value.
-     * @param {number} y - The Y value.
-     * @param {number} z - The Z value.
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} x - The X value `(0 to 1)`.
+     * @param {number} y - The Y value `(0 to 1)`.
+     * @param {number} z - The Z value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value (0 to 255).
      * @returns {Color}
      */
     static FromXYZ_D50(x, y, z, a := 255) => Color.FromPtr(DllCall("Color\ColorFromXYZ_D50" , "Double", x, "Double", y, "Double", z, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from XYZ D65 values.
-     * @param {number} x - The X value.
-     * @param {number} y - The Y value.
-     * @param {number} z - The Z value.
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} x - The X value `(0 to 95.045592705167)`.
+     * @param {number} y - The Y value `(0 to 100)`.
+     * @param {number} z - The Z value `(0 to 108.9057750759878)`.
+     * @param {number} [a=255] - The alpha value (0 to 255).
      * @returns {Color}
      */
     static FromXYZ_D65(x, y, z, a := 255) => Color.FromPtr(DllCall("Color\ColorFromXYZ_D65" , "Double", x, "Double", y, "Double", z, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from CIE Lab values.
-     * @param {number} l - The L value.
-     * @param {number} a - The a value.
-     * @param {number} b - The b value.
-     * @param {number} [t=255] - The alpha value (0-255).
+     * @param {number} l - The L value `(0 to 100)`.
+     * @param {number} a - The a value `(-100 to 100)`.
+     * @param {number} b - The b value `(-100 to 100)`.
+     * @param {number} [t=255] - The alpha value `(0 to 255)`.
      * @returns {Color} A new Color object.
      */
     static FromLab(l, a, b, t := 255) => Color.FromPtr(DllCall("Color\ColorFromLab" , "Double", l, "Double", a, "Double", b, "Double", t, "Ptr"))
 
     /**
      * Creates a Color object from LCHuv values.
-     * @param {number} L - The lightness value.
-     * @param {number} a - The a value.
-     * @param {number} b - The b value.
-     * @param {number} [alpha=255] - The alpha value (0-255).
+     * @param {number} l - The L value `(0 to 100)`.
+     * @param {number} a - The a value `(0 to 100)`.
+     * @param {number} b - The b value `(0 to 360)`.
+     * @param {number} [alpha=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromLCHuv(l, c, h, a := 255) => Color.FromPtr(DllCall("Color\ColorFromLCHuv", "Double", l, "Double", c, "Double", h, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from CIE Luv values.
-     * @param {number} L - The L value.
-     * @param {number} u - The u value.
-     * @param {number} v - The v value.
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} L - The L value `(0 to 100)`.
+     * @param {number} u - The u value `(-134-224)`.
+     * @param {number} v - The v value `(-140-122)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
-    static FromLuv(L, u, v, a := 255) => Color.FromPtr(DllCall("Color\ColorFromLuv", "Double", L, "Double", u, "Double", v, "Int", a, "Ptr"))
+    static FromLuv(l, u, v, a := 255) => Color.FromPtr(DllCall("Color\ColorFromLuv", "Double", l, "Double", u, "Double", v, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from LCH values.
-     * @param {number} l - The Lightness value (0-100).
-     * @param {number} c - The Chroma value (0-100).
-     * @param {number} h - The Hue value (0-360).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} l - The Lightness value `(0 to 100)`.
+     * @param {number} c - The Chroma value `(0 to 100)`.
+     * @param {number} h - The Hue value `(0 to 360)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromLCHab(l, c, h, a := 255) => Color.FromPtr(DllCall("Color\ColorFromLCHab", "Double", l, "Double", c, "Double", h, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from YPbPr values.
-     * @param {number} y - The Y value (0-1).
-     * @param {number} cb - The Cb value (0-1).
-     * @param {number} cr - The Cr value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} y - The Y value `(0 to 1)`.
+     * @param {number} cb - The Cb value `(-0.5 to 0.5)`.
+     * @param {number} cr - The Cr value `(-0.5 to 0.5)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromYPbPr(y, cb, cr, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYPbPr", "Double", y, "Double", cb, "Double", cr, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from YIQ values.
-     * @param {number} y - The Y value.
-     * @param {number} i - The I value.
-     * @param {number} q - The Q value.
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} y - The Y value `(0 to 1).
+     * @param {number} i - The I value `(-0.5957 to 0.5957)`.
+     * @param {number} q - The Q value `(-0.5226 to 0.5226)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromYIQ(y, i, q, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYIQ" , "Double", y, "Double", i, "Double", q, "Double", a, "Ptr"))
 
     /**
      * Creates a Color object from CMYK values.
-     * @param {number} c - The cyan value (0-100).
-     * @param {number} m - The magenta value (0-100).
-     * @param {number} y - The yellow value (0-100).
-     * @param {number} k - The key (black) value (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} c - The cyan value `(0 to 100)`.
+     * @param {number} m - The magenta value `(0 to 100)`.
+     * @param {number} y - The yellow value `(0 to 100)`.
+     * @param {number} k - The key (black) value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromCMYK(c, m, y, k, a := 255) => Color.FromPtr(DllCall("Color\ColorFromCMYK", "Double", c, "Double", m, "Double", y, "Double", k, "Double", a, "Ptr"))
@@ -512,52 +883,52 @@ class Color
 
     /**
      * Creates a Color object from Linear sRGB values.
-     * @param {number} r - The red value (0-1).
-     * @param {number} g - The green value (0-1).
-     * @param {number} b - The blue value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} r - The red value `(0 to 1)`.
+     * @param {number} g - The green value `(0 to 1)`.
+     * @param {number} b - The blue value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromLinearSRGB(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromLinearSRGB", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from ProPhoto RGB values.
-     * @param {number} r - The red value (0-1).
-     * @param {number} g - The green value (0-1).
-     * @param {number} b - The blue value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} r - The red value `(0 to 1)`.
+     * @param {number} g - The green value `(0 to 1)`.
+     * @param {number} b - The blue value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromProPhotoRGB(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromProPhotoRGB", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
      * Converts the color to Rec.2020 format.
-     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
      */
     ToRec2020() => (DllCall("Color\ColorToRec2020", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Creates a Color object from Rec.2020 values.
-     * @param {number} r - The red value (0-1).
-     * @param {number} g - The green value (0-1).
-     * @param {number} b - The blue value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} r - The red value `(0 to 1)`.
+     * @param {number} g - The green value `(0 to 1)`.
+     * @param {number} b - The blue value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromRec2020(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromRec2020", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
      * Converts the color to Display-P3 format.
-     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
      */
     ToDisplayP3() => (DllCall("Color\ColorToDisplayP3", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Creates a Color object from Display-P3 values.
-     * @param {number} r - The red value (0-1).
-     * @param {number} g - The green value (0-1).
-     * @param {number} b - The blue value (0-1).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {number} r - The red value `(0 to 1)`.
+     * @param {number} g - The green value `(0 to 1)`.
+     * @param {number} b - The blue value `(0 to 1)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromDisplayP3(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromDisplayP3", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
@@ -570,10 +941,10 @@ class Color
 
     /**
      * Creates a Color object from OKLab values.
-     * @param {number} l - The lightness value.
-     * @param {number} a - The green-red value.
-     * @param {number} b - The blue-yellow value.
-     * @param {number} [alpha=255] - The alpha value (0-255).
+     * @param {number} l - The lightness value `(0 to 1)`.
+     * @param {number} a - The green-red value `(-0.4 to 0.4)`.
+     * @param {number} b - The blue-yellow value `(-0.4 to 0.4)`.
+     * @param {number} [alpha=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromOKLab(l, a, b, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLab", "Double", l, "Double", a, "Double", b, "Int", alpha, "Ptr"))
@@ -586,20 +957,20 @@ class Color
 
     /**
      * Creates a Color object from OKLCH values.
-     * @param {number} l - The lightness value.
-     * @param {number} c - The chroma value.
-     * @param {number} h - The hue value (0-360).
-     * @param {number} [alpha=255] - The alpha value (0-255).
+     * @param {number} l - The lightness value `(0 to 1)`.
+     * @param {number} c - The chroma value `(0 to 0.4)`.
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} [alpha=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromOKLCH(l, c, h, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLCH", "Double", l, "Double", c, "Double", h, "Int", alpha, "Ptr"))
 
     /**
      * Creates a Color object from NCol values.
-     * @param {string} h - The hue string (e.g., "R", "Y", "G", "C", "B", "M").
-     * @param {number} w - The whiteness value (0-100).
-     * @param {number} b - The blackness value (0-100).
-     * @param {number} [a=255] - The alpha value (0-255).
+     * @param {string} h - The hue string `("R", "Y", "G", "C", "B", or "M")`.
+     * @param {number} w - The whiteness value `(0 to 100)`.
+     * @param {number} b - The blackness value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
      * @returns {Color}
      */
     static FromNCol(h, w, b, a := 255)
@@ -719,14 +1090,14 @@ class Color
      * @param {number} amount - The amount to shift the whiteness.
      * @returns {Color}
      */
-    ShiftWhiteness(amount) => (DllCall("Color\ShiftWhitenessColor", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftWhiteness(amount) => (DllCall("Color\ShiftWhiteLevelColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
-     * Shifts the blackness of the color by the specified amount.
+     * Shifts the blac level of the color by the specified amount.
      * @param {number} amount - The amount to shift the blackness.
      * @returns {Color}
      */
-    ShiftBlackness(amount) => (DllCall("Color\ShiftBlacknessColorBlackness", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftBlackLevel(amount) => (DllCall("Color\ShiftBlackLevelColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Calculates the contrast ratio between this color and another color.
@@ -775,13 +1146,13 @@ class Color
 
     /**
      * Converts the color to RGB format.
-     * @returns {Object} An object containing R, G, B, and A values (0-255).
+     * @returns {Object} An object containing R, G, B, and A values (0 to 255).
      */
     ToRGB() => (DllCall("Color\ColorToRGB", "Ptr", this.Ptr, "Ptr", r := Buffer(4, 0), "Ptr", g := Buffer(4, 0), "Ptr", b := Buffer(4, 0), "Ptr", a := Buffer(4, 0)), {R: NumGet(r, "Int"), G: NumGet(g, "Int"), B: NumGet(b, "Int"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to sRGB format.
-     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
      */
     ToLinearSRGB() => (DllCall("Color\ColorToLinearSRGB", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
@@ -793,7 +1164,7 @@ class Color
 
     /**
      * Converts the color to Adobe RGB format.
-     * @returns {Object} An object containing r, g, b (0-1), and A (0-255) values.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
      */
     ToAdobeRGB() => (DllCall("Color\ColorToAdobeRGB", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
@@ -805,27 +1176,33 @@ class Color
 
     /**
      * Converts the color to HSL format.
-     * @returns {Object} An object containing H (0-360), S (0-100), L (0-100), and A (0-255) values.
+     * @returns {Object} An object containing H (0 to 360), S (0 to 100), L (0 to 100), and A (0 to 255) values.
      */
     ToHSL() => (DllCall("Color\ColorToHSL"    , "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", s := Buffer(8, 0), "Ptr", l := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), S: NumGet(s, "Double"), L: NumGet(l, "Double")      , A: NumGet(a, "Int")})
 
     /**
      * Converts the color to HSV format.
-     * @returns {Object} An object containing H (0-360), S (0-100), V (0-100), and A (0-255) values.
+     * @returns {Object} An object containing H (0 to 360), S (0 to 100), V (0 to 100), and A (0 to 255) values.
      */
     ToHSV() => (DllCall("Color\ColorToHSV", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0), "Ptr", s := Buffer(8, 0), "Ptr", v := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), S: NumGet(s, "Double"), V: NumGet(v, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to HSI format.
-     * @returns {Object} An object containing H (0-360), S (0-100), I (0-100), and A (0-255) values.
+     * @returns {Object} An object containing H (0 to 360), S (0 to 100), I (0 to 100), and A (0 to 255) values.
      */
     ToHSI() => (DllCall("Color\ColorToHSI", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0), "Ptr", s := Buffer(8, 0), "Ptr", i := Buffer(8, 0), "Ptr", a := Buffer(4, 0), "Cdecl"), {H: NumGet(h, "Double"), S: NumGet(s, "Double"), I: NumGet(i, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to HWB format.
-     * @returns {Object} An object containing H (0-360), W (0-100), B (0-100), and A (0-255) values.
+     * @returns {Object} An object containing H (0 to 360), W (0 to 100), B (0 to 100), and A (0 to 255) values.
      */
-    ToHWB() => (DllCall("Color\ColorToHWB"    , "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", w := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), W: NumGet(w, "Double"), B: NumGet(b, "Double")      , A: NumGet(a, "Int")})
+    ToHWB() => (DllCall("Color\ColorToHWB"    , "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", w := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), W: NumGet(w, "Double"), B: NumGet(b, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to HWB format.
+     * @returns {Object} An object containing H (0 to 360), S (0 to 100), P (0 to 255), and A (0 to 255) values.
+     */
+    ToHSP() => (DllCall("Color\ColorToHSP", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", s := Buffer(8, 0), "Ptr", p := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), S: NumGet(s, "Double"), P: NumGet(p, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to XYZ D50 format.
@@ -859,13 +1236,13 @@ class Color
 
     /**
      * Converts the color to LCH format.
-     * @returns {Object} An object containing L (0-100), C (0-100), H (0-360), and A (0-255) values.
+     * @returns {Object} An object containing L (0 to 100), C (0 to 100), H (0 to 360), and A (0 to 255) values.
      */
     ToLCHab() => (DllCall("Color\ColorToLCHab", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", c := Buffer(8, 0), "Ptr", h := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {L: NumGet(l, "Double"), C: NumGet(c, "Double"), H: NumGet(h, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to YPbPr format.
-     * @returns {Object} An object containing Y (0-1), Cb (0-1), Cr (0-1), and A (0-255) values.
+     * @returns {Object} An object containing Y (0 to 1), Cb (0 to 1), Cr (0 to 1), and A (0 to 255) values.
      */
     ToYPbPr() => (DllCall("Color\ColorToYPbPr", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", cb := Buffer(8, 0), "Ptr", cr := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), Cb: NumGet(cb, "Double"), Cr: NumGet(cr, "Double"), A: NumGet(a, "Int")})
 
@@ -887,6 +1264,10 @@ class Color
      */
     ToCMYK() => (DllCall("Color\ColorToCMYK"   , "Ptr", this.Ptr, "Ptr", c := Buffer(8, 0)  , "Ptr", m := Buffer(8, 0), "Ptr", y := Buffer(8, 0), "Ptr", k := Buffer(8, 0) , "Ptr", a := Buffer(4, 0)), {C: NumGet(c, "Double"), M: NumGet(m, "Double"), Y: NumGet(y, "Double"), K: NumGet(k, "Double"), A: NumGet(a, "Int")})
 
+    /**
+     * Converts the Color to Duv representation.
+     * @returns {Float}
+     */
     ToDuv() => DllCall("Color\ColorToDuv", "Ptr", this.Ptr, "Double")
 
     /**
@@ -956,16 +1337,7 @@ class Color
      */
     Square() => this.Analogous(90, 4)
 
-    ApplyColorMatrix(matrix)
-    {
-        return Color.FromPtr(DllCall("Color\ColorApplyMatrix", "Ptr", this.Ptr,
-            "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3], "Double", matrix[1][4], "Double", matrix[1][5],
-            "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3], "Double", matrix[2][4], "Double", matrix[2][5],
-            "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3], "Double", matrix[3][4], "Double", matrix[3][5],
-            "Double", matrix[4][1], "Double", matrix[4][2], "Double", matrix[4][3], "Double", matrix[4][4], "Double", matrix[4][5],
-            "Double", matrix[5][1], "Double", matrix[5][2], "Double", matrix[5][3], "Double", matrix[5][4], "Double", matrix[5][5],
-            "Ptr"))
-    }
+    ApplyMatrix(matrix) => Color.FromPtr(DllCall("Color\ColorApplyMatrix", "Ptr", this.Ptr, "Ptr", matrix.Ptr, "Ptr"))
 
     /**
      * Defines default format strings for various color representations.
@@ -982,7 +1354,7 @@ class Color
          * Default format string for Linear sRGB color representation.
          * @type {string}
          */
-        static LinearSRGB := "srgb({R:3}, {G:3}, {B:3})"
+        static LinearSRGB := "srgb({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for hexadecimal color representation.
@@ -1006,7 +1378,7 @@ class Color
          * Default format string for XYZ_D50 color representation.
          * @type {string}
          */
-        static XYZ_D50  := "xyz_d50({X}, {Y}, {Z})"
+        static XYZ_D50  := "xyz_d50({X:2}, {Y:2}, {Z:2})"
 
         /**
          * Default format string for XYZ_D65 color representation.
@@ -1018,13 +1390,13 @@ class Color
          * Default format string for Lab color representation.
          * @type {string}
          */
-        static Lab  := "lab({L}, {A}, {B})"
+        static Lab  := "lab({L}, {a}, {b})"
 
         /**
          * Default format string for YIQ color representation.
          * @type {string}
          */
-        static YIQ  := "yiq({Y:3}, {I:3}, {Q:3})"
+        static YIQ  := "yiq({Y:2}, {I:2}, {Q:2})"
 
         /**
          * Default format string for NCol color representation.
@@ -1051,10 +1423,16 @@ class Color
         static HSI := "hsi({H}, {S}%, {I})"
 
         /**
+         * Default format string for HSP color representation.
+         * @type {string}
+         */
+        static HSP := "hsp({H}, {S}%, {P}%)"
+
+        /**
          * Default format string for YPbPr color representation.
          * @type {string}
          */
-        static YPbPr := "ypbpr({Y:3}, {Cb:3}, {Cr:3})"
+        static YPbPr := "ypbpr({Y:2}, {Pb:2}, {Pr:2})"
 
         /**
          * Default format string for LCH color representation.
@@ -1072,60 +1450,53 @@ class Color
          * Default format string for Adobe RGB color representation.
          * @type {string}
          */
-        static AdobeRGB := "adobe({R:3}, {G:3}, {B:3})"
+        static AdobeRGB := "adobe({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for ProPhoto RGB color representation.
          * @type {string}
          */
-        static ProPhotoRGB := "prophoto({R:3}, {G:3}, {B:3})"
+        static ProPhotoRGB := "prophoto({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for CIE Luv color representation.
          * @type {string}
          */
-        static Luv := "luv({L}, {U}, {V})"
+        static Luv := "luv({L}, {u}, {v})"
 
         /**
          * Default format string for Rec2020 color representation.
          * @type {string}
          */
-        static Rec2020 := "rec2020({R:3}, {G:3}, {B:3})"
+        static Rec2020 := "rec2020({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for DisplayP3 color representation.
          * @type {string}
          */
-        static DisplayP3 := "display-p3({R:3}, {G:3}, {B:3})"
+        static DisplayP3 := "display-p3({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for OKLab color representation.
          * @type {string}
          */
-        static OKLab := "oklab({L}, {a}, {b})"
+        static OKLab := "oklab({L:2}, {a:2}, {b:2})"
 
         /**
          * Default format string for OKLCH color representation.
          * @type {string}
          */
-        static OKLCH := "oklch({L}, {C}, {H})"
+        static OKLCH := "oklch({L:2}, {C:2}, {H})"
     }
 }
 
 class ColorBuffer
 {
-    __New(gradientOrWidth, height?, col?)
+    Ptr := 0
+
+    __New(width, height, col?)
     {
-        if gradientOrWidth is Gradient  ; If first param is a Gradient
-        {
-            if !IsSet(height)
-                throw ValueError("Height parameter required when creating ColorBuffer from Gradient")
-            this.Ptr := DllCall("Color\CreateColorBufferFromGradient", "Ptr", gradientOrWidth.Ptr, "Int", height, "Int", color ?? height, "Ptr")
-        }
-        else  ; Existing width/height constructor
-        {
-            this.Ptr := DllCall("Color\CreateColorBufferFromWHC", "Int", gradientOrWidth, "Int", height, "Ptr", (col ?? Color.Transparent).Ptr, "Ptr")
-        }
+        this.Ptr := DllCall("Color\CreateColorBufferFromWHC", "Int", width, "Int", height, "Ptr", (col ?? Color.Transparent).Ptr, "Ptr")
     }
 
     /**
@@ -1273,22 +1644,75 @@ class ColorBuffer
     }
 
     /**
-     * Creates a ColorBuffer from an HBITMAP handle.
-     * @static
-     * @param {Ptr} hBitmap - The HBITMAP handle.
-     * @param {number} [width=0] - The desired width of the ColorBuffer. If 0, uses the bitmap's width.
-     * @param {number} [height=0] - The desired height of the ColorBuffer. If 0, uses the bitmap's height.
-     * @returns {ColorBuffer} A new ColorBuffer instance created from the HBITMAP.
-     */
-    static FromHBITMAP(hBitmap, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHBITMAP", "Ptr", hBitmap, "Int", width, "Int", height, "Ptr"))
-
-    /**
      * Exports the ColorBuffer as an HBITMAP.
      * @param {number} [width=0] - The desired width of the HBITMAP. If 0, uses the ColorBuffer's width.
      * @param {number} [height=0] - The desired height of the HBITMAP. If 0, uses the ColorBuffer's height.
      * @returns {Ptr} The HBITMAP handle of the exported image.
      */
-    ToHBITMAP(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHBitmap", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+    ToHBITMAP(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHBITMAP", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+
+    /**
+     * Creates a ColorBuffer from an HBITMAP handle.
+     * @param {Ptr} hBitmap - The HBITMAP handle.
+     * @returns {ColorBuffer} A new ColorBuffer instance created from the HBITMAP.
+     */
+    static FromHBITMAP(hBitmap, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHBITMAP", "Ptr", hBitmap, "Int", width, "Int", height, "Ptr"))
+
+    /**
+     * Exports the ColorBuffer as an HDC.
+     * @param {number} [width=0] - The desired width of the HDC. If 0, uses the ColorBuffer's width.
+     * @param {number} [height=0] - The desired height of the HDC. If 0, uses the ColorBuffer's height.
+     * @returns {Ptr} The HDC handle of the exported image.
+     */
+    ToHDC(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHDC", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+
+    /**
+     * Creates a ColorBuffer from an HDC handle.
+     * @static
+     * @param {Ptr} hdc - The HDC handle.
+     * @param {number} x - The x-coordinate of the region to capture.
+     * @param {number} y - The y-coordinate of the region to capture.
+     * @param {number} width - The width of the region to capture.
+     * @param {number} height - The height of the region to capture.
+     * @returns {ColorBuffer} A new ColorBuffer instance created from the HDC region.
+     */
+    static FromHDC(hdc, x := 0, y := 0, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHDC", "Ptr", hdc, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
+
+    /**
+     * Exports the ColorBuffer as an HICON.
+     * @param {number} [width=0] - The desired width of the HICON. If 0, uses the ColorBuffer's width.
+     * @param {number} [height=0] - The desired height of the HICON. If 0, uses the ColorBuffer's height.
+     * @returns {Ptr} The HICON handle of the exported image.
+     */
+    ToHICON(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHICON", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+
+    /**
+     * Creates a ColorBuffer from an HICON handle.
+     * @static
+     * @param {Ptr} hIcon - The HICON handle.
+     * @returns {ColorBuffer} A new ColorBuffer instance created from the HICON.
+     */
+    static FromHICON(hIcon) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHICON", "Ptr", hIcon, "Ptr"))
+
+    /**
+     * Exports the ColorBuffer as an HCURSOR.
+     * @param {number} [width=0] - The desired width of the HCURSOR. If 0, uses the ColorBuffer's width.
+     * @param {number} [height=0] - The desired height of the HCURSOR. If 0, uses the ColorBuffer's height.
+     * @returns {Ptr} The HCURSOR handle of the exported image.
+     */
+    ToHCURSOR(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHCURSOR", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+
+    /**
+     * Creates a ColorBuffer from an HCURSOR handle.
+     * @static
+     * @param {Ptr} hCursor - The HCURSOR handle.
+     * @returns {ColorBuffer} A new ColorBuffer instance created from the HCURSOR.
+     */
+    static FromHCURSOR(hCursor) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHCURSOR", "Ptr", hCursor, "Ptr"))
+
+    static FromHWND(hWnd, x := 0, y := 0, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHWND", "Ptr", hWnd, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
+
+    static FromGradient(grad, width, height) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromGradient", "Ptr", grad.Ptr, "Int", width, "Int", height, "Ptr"))
 
     /**
      * Resizes the ColorBuffer to the specified dimensions.
@@ -1396,16 +1820,7 @@ class ColorBuffer
      */
     SetAlpha(value) => (DllCall("Color\SetAlphaColorBuffer", "Ptr", this.Ptr, "Int", value), this)
 
-    ApplyMatrix(matrix)
-    {
-        DllCall("Color\ColorBufferApplyMatrix", "Ptr", this.Ptr,
-            "Double", matrix[1][1], "Double", matrix[1][2], "Double", matrix[1][3], "Double", matrix[1][4], "Double", matrix[1][5],
-            "Double", matrix[2][1], "Double", matrix[2][2], "Double", matrix[2][3], "Double", matrix[2][4], "Double", matrix[2][5],
-            "Double", matrix[3][1], "Double", matrix[3][2], "Double", matrix[3][3], "Double", matrix[3][4], "Double", matrix[3][5],
-            "Double", matrix[4][1], "Double", matrix[4][2], "Double", matrix[4][3], "Double", matrix[4][4], "Double", matrix[4][5],
-            "Double", matrix[5][1], "Double", matrix[5][2], "Double", matrix[5][3], "Double", matrix[5][4], "Double", matrix[5][5])
-        return this
-    }
+    ApplyMatrix(matrix) => (DllCall("Color\ColorBufferApplyMatrix", "Ptr", this.Ptr, "Ptr", matrix.Ptr), this)
 
     /**
      * Inverts all colors in the buffer.
@@ -1684,6 +2099,8 @@ class ColorBuffer
     Filter(predicate) => (callbackPtr := CallbackCreate(predicate), resultPtr := DllCall("Color\ColorBufferFilter", "Ptr", this.Ptr, "Ptr", callbackPtr, "Ptr"), CallbackFree(callbackPtr), ColorBuffer.FromPtr(resultPtr))
 
     Count(color) => DllCall("Color\ColorBufferCount", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
+
+    CountUnique() => DllCall("Color\ColorBufferCountUniqueColors", "Ptr", this.Ptr, "Int")
 
     Shuffle() => (DllCall("Color\ColorBufferShuffle", "Ptr", this.Ptr), this)
 
@@ -2025,7 +2442,7 @@ class Gradient
      */
     Complement() => (DllCall("Color\GradientComplement", "Ptr", this.Ptr, "Ptr"), this)
 
-    Draw(hwnd, x, y, width, height) => (DllCall("Color\DrawGradient", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y, "Int", width, "Height", height), this)
+    Draw(hwnd, x, y, width, height) => (DllCall("Color\DrawGradient", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y, "Int", width, "Int", height), this)
 
     /**
      * Creates a Gradient instance from a pointer to existing gradient data.
@@ -2049,8 +2466,8 @@ class ColorPicker
     }
 
     Start() => DllCall("Color\ColorPickerStart", "Ptr", this.Ptr)
-    Stop() => DllCall("Color\ColorPickerStop", "Ptr", this.Ptr)
-    Toggle() => DllCall("Color\ColorPickerToggle", "Ptr", this.Ptr)
+    Stop() => (DllCall("Color\ColorPickerStop", "Ptr", this.Ptr), Sleep(50))
+    Toggle() => (DllCall("Color\ColorPickerToggle", "Ptr", this.Ptr), (!this.IsActive() ? Sleep(50) : 0))
     IsActive() => DllCall("Color\ColorPickerIsActive", "Ptr", this.Ptr, "Int")
     GetCurrentColor() => Color.FromPtr(DllCall("Color\ColorPickerGetCurrentColor", "Ptr", this.Ptr, "Ptr"))
 
@@ -2128,6 +2545,10 @@ class ColorPicker
 
         while picker.IsActive()
         {
+            currentColor := picker.GetCurrentColor()
+            colorStr := picker.Value
+            picker.SetTextBackgroundColor(currentColor)
+
             if GetKeyState("h", "P")
             {
                 picker.ToggleHighlight()
@@ -2222,24 +2643,180 @@ class ColorPicker
                 return
             }
 
-            currentColor := picker.GetCurrentColor()
-            picker.SetTextBackgroundColor(currentColor)
             Sleep(16)
         }
 
         if copy
-            A_Clipboard := picker.Value
+            A_Clipboard := colorStr
 
         return currentColor
     }
 }
 
-Showcase(obj, title)
+class ColorMatrix
+{
+    Ptr := 0
+
+    __New(matrix?)
+    {
+        this.Ptr := DllCall("Color\CreateColorMatrix", "Ptr")
+
+        if !IsSet(matrix)
+        {
+            ; Set identity matrix
+            Loop 5
+            {
+                row := A_Index
+                Loop 5
+                    this[row, A_Index] := (row == A_Index) ? 1.0 : 0.0
+            }
+        }
+        else
+        {
+            ; Set values from provided matrix array
+            Loop 5
+            {
+                row := A_Index
+                Loop 5
+                    this[row, A_Index] := matrix[row][A_Index]
+            }
+        }
+    }
+
+    __Delete() => DllCall("Color\DeleteColorMatrix", "Ptr", this.Ptr)
+
+    __Item[row, col]
+    {
+        get => DllCall("Color\GetMatrixValue", "Ptr", this.Ptr, "Int", row-1, "Int", col-1, "Double")
+        set => DllCall("Color\SetMatrixValue", "Ptr", this.Ptr, "Int", row-1, "Int", col-1, "Double", value)
+    }
+
+    Add(other) => ColorMatrix.FromPtr(DllCall("Color\AddMatrices", "Ptr", this.Ptr, "Ptr", other.Ptr, "Ptr"))
+
+    Subtract(other) => ColorMatrix.FromPtr(DllCall("Color\SubtractMatrices", "Ptr", this.Ptr, "Ptr", other.Ptr, "Ptr"))
+
+    Multiply(other) => IsNumber(other) ? ColorMatrix.FromPtr(DllCall("Color\MultiplyMatrixByScalar", "Ptr", this.Ptr, "Double", other, "Ptr")) : ColorMatrix.FromPtr(DllCall("Color\MultiplyMatrices", "Ptr", this.Ptr, "Ptr", other.Ptr, "Ptr"))
+
+    Transpose() => ColorMatrix.FromPtr(DllCall("Color\TransposeMatrix", "Ptr", this.Ptr, "Ptr"))
+
+    static FromPtr(ptr) => { base: ColorMatrix.Prototype, Ptr: ptr }
+
+    ; Inversion Matrix
+    static Invert := ColorMatrix([
+        [-1.000,  0.000,  0.000,  0.000,  1.000],
+        [ 0.000, -1.000,  0.000,  0.000,  1.000],
+        [ 0.000,  0.000, -1.000,  0.000,  1.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; "Heat Vision"
+    static HeatVision := ColorMatrix([
+        [ 2.000, -1.000, -1.000,  0.000,  0.300],
+        [-1.000,  1.500, -1.000,  0.000,  0.200],
+        [ 1.000, -1.000,  2.000,  0.000,  0.100],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; "Night Vision"
+    static NightVision := ColorMatrix([
+        [ 0.100,  0.400,  0.000,  0.000,  0.100],
+        [ 0.300,  1.500,  0.200,  0.000,  0.200],
+        [ 0.000,  0.200,  0.100,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies an effect reminiscent of Polaroid photographs
+    static Polaroid := ColorMatrix([
+        [ 1.438, -0.062, -0.062,  0.000,  0.000],
+        [-0.122,  1.378, -0.122,  0.000,  0.000],
+        [-0.016, -0.016,  1.483,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies a technicolor effect
+    static Technicolor := ColorMatrix([
+        [ 1.600, -0.400, -0.200,  0.000,  0.000],
+        [-0.200,  1.400, -0.200,  0.000,  0.000],
+        [-0.200, -0.400,  1.600,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies an effect similar to vintage film
+    static VintageFilm := ColorMatrix([
+        [ 0.900,  0.100,  0.100,  0.000,  0.000],
+        [ 0.100,  0.900,  0.100,  0.000,  0.000],
+        [ 0.100,  0.200,  0.700,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies a kodachrome-like effect
+    static Kodachrome := ColorMatrix([
+        [ 1.200, -0.100,  0.000,  0.000,  0.100],
+        [-0.050,  1.100,  0.000,  0.000,  0.050],
+        [ 0.000, -0.100,  1.000,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies an effect that imitates cross-processing
+    static CrossProcess := ColorMatrix([
+        [ 1.000,  0.200,  0.100,  0.000,  0.000],
+        [ 0.000,  1.100, -0.100,  0.000,  0.000],
+        [ 0.100,  0.100,  1.000,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies a blue-channel grayscale effect
+    static BlueChannelGrayscale := ColorMatrix([
+        [ 0.000,  0.000,  1.000,  0.000,  0.000],
+        [ 0.000,  0.000,  1.000,  0.000,  0.000],
+        [ 0.000,  0.000,  1.000,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies a green-channel grayscale effect
+    static GreenChannelGrayscale := ColorMatrix([
+        [ 0.000,  1.000,  0.000,  0.000,  0.000],
+        [ 0.000,  1.000,  0.000,  0.000,  0.000],
+        [ 0.000,  1.000,  0.000,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+
+    ; Applies a red-channel grayscale effect
+    static RedChannelGrayscale := ColorMatrix([
+        [ 1.000,  0.000,  0.000,  0.000,  0.000],
+        [ 1.000,  0.000,  0.000,  0.000,  0.000],
+        [ 1.000,  0.000,  0.000,  0.000,  0.000],
+        [ 0.000,  0.000,  0.000,  1.000,  0.000],
+        [ 0.000,  0.000,  0.000,  0.000,  1.000]
+    ])
+}
+
+/**
+ * A function to display a `Color`, `Gradient`, or `ColorBuffer`, along with some information about it.
+ * @param {Color|Gradient|ColorBuffer} obj The Color, Gradient, or ColorBuffer to display.
+ * @param {String} title The title of the window.
+ * @returns {Integer} wParam
+ */
+Showcase(obj, title := "Showcase")
 {
     if obj is Color
-        DllCall("Color\ShowColorShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+        wParam := DllCall("Color\ShowColorShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
     else if obj is Gradient
-        DllCall("Color\ShowGradientShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+        wParam := DllCall("Color\ShowGradientShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+    else if obj is ColorBuffer
+        wParam := DllCall("Color\ShowColorBufferShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
     else
         throw Error("Invalid Type Received.")
+
+    return wParam
 }

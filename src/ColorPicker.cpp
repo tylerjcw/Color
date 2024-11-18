@@ -17,7 +17,7 @@ namespace KTLib
         RegisterClassExW(&wc);
 
         m_previewWindow = CreateWindowExW(
-            WS_EX_TOPMOST | WS_EX_TRANSPARENT,
+            WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
             L"KTLibColorPicker",
             NULL,
             WS_POPUP,
@@ -145,19 +145,7 @@ namespace KTLib
 
             while (picker->m_isActive)
             {
-                POINT pt;
-                GetCursorPos(&pt);
-
                 picker->m_currentColor = picker->GetColorUnderCursor();
-                SetWindowPos(picker->m_previewWindow,
-                    HWND_TOPMOST,
-                    pt.x + picker->m_previewXOffset,
-                    pt.y + picker->m_previewYOffset,
-                    picker->m_previewWidth,
-                    picker->m_previewHeight + picker->m_textHeight,
-                    SWP_NOACTIVATE
-                );
-
                 picker->UpdatePreview();
             }
             return 0;
@@ -377,8 +365,56 @@ namespace KTLib
     void ColorPicker::UpdatePreview()
     {
         GetCursorPos(&m_currentPosition);
-        SetForegroundWindow(m_previewWindow);
 
+        HMONITOR hMonitor = MonitorFromPoint(m_currentPosition, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo = {  };
+        GetMonitorInfo(hMonitor, &monitorInfo);
+
+        // Get DPI scale for current monitor
+        float dpiScale = GetDpiForWindow(m_previewWindow) / 96.0f;
+
+        // Scale preview dimensions
+        int scaledPreviewWidth = m_previewWidth * dpiScale;
+        int scaledPreviewHeight = (m_previewHeight + m_textHeight) * dpiScale;
+
+        // Calculate preview position
+        int previewX = m_currentPosition.x + m_previewXOffset;
+        int previewY = m_currentPosition.y + m_previewYOffset;
+
+        // Check each monitor for edge detection
+        int monitorCount = GetSystemMetrics(SM_CMONITORS);
+        for (int i = 1; i <= monitorCount; i++) {
+            MONITORINFO mi = {  };
+            HMONITOR hMon = MonitorFromPoint({m_currentPosition.x, m_currentPosition.y}, MONITOR_DEFAULTTONEAREST);
+            GetMonitorInfo(hMon, &mi);
+
+            if (m_currentPosition.x >= mi.rcMonitor.left &&
+                m_currentPosition.x < mi.rcMonitor.right &&
+                m_currentPosition.y >= mi.rcMonitor.top &&
+                m_currentPosition.y < mi.rcMonitor.bottom)
+            {
+                // Adjust for right edge
+                if (previewX + scaledPreviewWidth > mi.rcMonitor.right) {
+                    previewX = m_currentPosition.x - m_previewXOffset * dpiScale - scaledPreviewWidth;
+                }
+
+                // Adjust for bottom edge
+                if (previewY + scaledPreviewHeight > mi.rcMonitor.bottom) {
+                    previewY = m_currentPosition.y - m_previewYOffset * dpiScale - scaledPreviewHeight;
+                }
+
+                // Ensure preview stays within monitor bounds
+                previewX = static_cast<int>(std::max(static_cast<LONG>(mi.rcMonitor.left),
+                                          std::min(static_cast<LONG>(previewX),
+                                          mi.rcMonitor.right - scaledPreviewWidth)));
+                previewY = static_cast<int>(std::max(static_cast<LONG>(mi.rcMonitor.top),
+                                          std::min(static_cast<LONG>(previewY),
+                                          mi.rcMonitor.bottom - scaledPreviewHeight)));
+                break;
+            }
+        }
+
+        // Draw preview window content
         Gdiplus::Graphics graphics(m_buffer);
         graphics.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
         graphics.Clear(Gdiplus::Color::Transparent);
@@ -393,8 +429,7 @@ namespace KTLib
         graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
         graphics.DrawImage(&capture, 0.0f, 0.0f, scaledWidth, scaledHeight);
 
-        switch (m_viewMode)
-        {
+        switch (m_viewMode) {
             case ViewMode::Grid: DrawGrid(graphics); break;
             case ViewMode::Dot: DrawDot(graphics); break;
             case ViewMode::Crosshair: DrawCrosshair(graphics); break;
@@ -402,15 +437,17 @@ namespace KTLib
         }
 
         if (m_highlightCenter) DrawHighlight(graphics);
-
         DrawText(graphics);
 
         HDC windowDC = GetDC(m_previewWindow);
-        Gdiplus::Graphics windowGraphics(windowDC);
-        windowGraphics.DrawImage(m_buffer, 0, 0);
+        Gdiplus::Graphics(windowDC).DrawImage(m_buffer, 0, 0);
         ReleaseDC(m_previewWindow, windowDC);
 
-        Color* updateColor = new Color(m_currentColor);
-        if (m_onUpdate) m_onUpdate(updateColor);
+        SetWindowPos(m_previewWindow, HWND_TOPMOST, previewX, previewY,
+                    m_previewWidth, m_previewHeight + m_textHeight, SWP_NOACTIVATE);
+
+        SetForegroundWindow(m_previewWindow);
+
+        if (m_onUpdate) m_onUpdate(new Color(m_currentColor));
     }
 }

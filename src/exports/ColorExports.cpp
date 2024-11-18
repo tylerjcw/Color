@@ -26,6 +26,13 @@ extern "C"
         *a = color->a;
     }
 
+    COLOR_API Color* ColorFromHSP(double h, double s, double p, int a) { return new Color(Color::FromHSP(h, s, p, a)); }
+    COLOR_API void ColorToHSP(Color* color, double* h, double* s, double* p, int* a)
+    {
+        color->ToHSP(*h, *s, *p);
+        *a = color->a;
+    }
+
     COLOR_API Color* ColorFromCMYK(double c, double m, double y, double k, double a) { return new Color(Color::FromCMYK(c, m, y, k, a)); }
     COLOR_API void ColorToCMYK(Color* color, double* c, double* m, double* y, double* k, int* a)
     {
@@ -247,46 +254,7 @@ extern "C"
     COLOR_API Color* ColorMultiply(Color* color1, Color* color2) { return new Color(Color::Multiply(*color1, *color2)); }
     COLOR_API Color* ColorOverlay(Color* color1, Color* color2) { return new Color(Color::Overlay(*color1, *color2)); }
     COLOR_API Color* ColorAverage(Color** colors, int count) { return new Color(Color::Average(const_cast<const Color**>(colors), count)); }
-
-    COLOR_API Color* ColorMultiplyMatrix(Color* color,
-        double m11, double m12, double m13, double m14, double m15,
-        double m21, double m22, double m23, double m24, double m25,
-        double m31, double m32, double m33, double m34, double m35,
-        double m41, double m42, double m43, double m44, double m45,
-        double m51, double m52, double m53, double m54, double m55)
-    {
-        ColorMatrix matrix;
-        // Fill 5x5 matrix using single loop
-        double m[25] = {m11,m12,m13,m14,m15, m21,m22,m23,m24,m25, m31,m32,m33,m34,m35, m41,m42,m43,m44,m45, m51,m52,m53,m54,m55};
-
-        for(int i = 0; i < 25; i++) matrix.data[i/5][i%5] = m[i];
-
-        return new Color(*color * matrix);
-    }
-
-    COLOR_API Color* ColorAddMatrix(Color* color,
-        double m11, double m12, double m13,
-        double m21, double m22, double m23,
-        double m31, double m32, double m33)
-    {
-        ColorMatrix matrix;
-        matrix.data[0][0] = m11; matrix.data[0][1] = m12; matrix.data[0][2] = m13;
-        matrix.data[1][0] = m21; matrix.data[1][1] = m22; matrix.data[1][2] = m23;
-        matrix.data[2][0] = m31; matrix.data[2][1] = m32; matrix.data[2][2] = m33;
-        return new Color(*color + matrix);
-    }
-
-    COLOR_API Color* ColorSubtractMatrix(Color* color,
-        double m11, double m12, double m13,
-        double m21, double m22, double m23,
-        double m31, double m32, double m33)
-    {
-        ColorMatrix matrix;
-        matrix.data[0][0] = m11; matrix.data[0][1] = m12; matrix.data[0][2] = m13;
-        matrix.data[1][0] = m21; matrix.data[1][1] = m22; matrix.data[1][2] = m23;
-        matrix.data[2][0] = m31; matrix.data[2][1] = m32; matrix.data[2][2] = m33;
-        return new Color(*color - matrix);
-    }
+    COLOR_API Color* ColorApplyMatrix(Color* color, ColorMatrix* matrix) { return new Color(*color * *matrix); }
     #pragma endregion
 
     #pragma region Utility
@@ -298,8 +266,12 @@ extern "C"
     COLOR_API Color* CreateRandomColor(int alphaRand) { return new Color(Color::Random(alphaRand == 0 ? false : true)); }
     COLOR_API const char* GetColorFormatString(Color* color) { return color->GetFormatString().c_str(); }
     COLOR_API void SetColorFormatString(Color* color, const char* format) { color->SetFormatString(std::string(format)); }
+    COLOR_API const char* GetColorTypeString(Color* color) { return color->GetTypeString().c_str(); }
+    COLOR_API void SetColorTypeString(Color* color, const char* type) { color->SetTypeString(type); }
 
     COLOR_API unsigned int ColorToInt(Color* color, int format) { return color->ToInt(format); }
+    COLOR_API int GetColorARGB(Color* color) { return color->argb; }
+    COLOR_API void SetColorARG(Color* color, int argb) { color->SetARGB(argb); }
     COLOR_API int GetColorAlpha(Color* color) { return color->a; }
     COLOR_API void SetColorAlpha(Color* color, int a) { color->SetAlpha(a); }
     COLOR_API int GetColorRed(Color* color) { return color->r; }
@@ -500,6 +472,12 @@ extern "C"
         fullStr[255] = '\0';
     }
 
+    COLOR_API COLORREF ColorToCOLORREF(Color* color) { return color->ToCOLORREF(); }
+    COLOR_API Color* ColorFromCOLORREF(COLORREF colorref) { return new Color(Color::FromCOLORREF(colorref)); }
+
+    COLOR_API Gdiplus::Color ColorToGdipColor(Color* color) { return color->ToGdipColor(); }
+    COLOR_API Color* ColorFromGdipColor(UINT64 gdipColor) { Gdiplus::Color color(gdipColor); return new Color(Color::FromGdipColor(color)); }
+
     COLOR_API void FreeColorArray(Color** colors, int count)
     {
         for (int i = 0; i < count; ++i)
@@ -528,5 +506,17 @@ extern "C"
             callback(x, y, color, r, g, b, a);
         }
     }
+    #pragma endregion
+
+    #pragma region ColorMatrix exports
+    COLOR_API ColorMatrix* CreateColorMatrix() { return new ColorMatrix(); }
+    COLOR_API void DeleteColorMatrix(ColorMatrix* matrix) { delete matrix; }
+    COLOR_API ColorMatrix* MultiplyMatrixByScalar(ColorMatrix* matrix, double factor) { return new ColorMatrix(*matrix * factor); }
+    COLOR_API ColorMatrix* MultiplyMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2) { return new ColorMatrix(*matrix1 * *matrix2); }
+    COLOR_API ColorMatrix* AddMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2) { return new ColorMatrix(*matrix1 + *matrix2); }
+    COLOR_API ColorMatrix* SubtractMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2) { return new ColorMatrix(*matrix1 - *matrix2); }
+    COLOR_API ColorMatrix* TransposeMatrix(ColorMatrix* matrix) { return new ColorMatrix(matrix->Transpose()); }
+    COLOR_API void SetMatrixValue(ColorMatrix* matrix, int row, int col, double value) { matrix->data[row][col] = value; }
+    COLOR_API double GetMatrixValue(ColorMatrix* matrix, int row, int col) { return matrix->data[row][col]; }
     #pragma endregion
 }

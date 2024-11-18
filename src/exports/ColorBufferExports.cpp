@@ -6,8 +6,25 @@ extern "C"
     COLOR_API ColorBuffer* CreateColorBufferFromArray(Color** colors, int width, int height) { return new ColorBuffer(colors, width, height); }
     COLOR_API ColorBuffer* CreateColorBufferFromWHC(int width, int height, Color* defaultColor) { return new ColorBuffer(width, height, *defaultColor); }
     COLOR_API ColorBuffer* CreateColorBufferFromBuffer(unsigned int* buffer, int width, int height) { return new ColorBuffer(buffer, width, height); }
-    COLOR_API ColorBuffer* CreateColorBufferFromHBITMAP(HBITMAP hBitmap, int targetWidth, int targetHeight) { return ColorBuffer::FromHBITMAP(hBitmap, targetWidth, targetHeight); }
     COLOR_API ColorBuffer* CreateColorBufferFromGradient(Gradient* gradient, int width, int height) { return new ColorBuffer(*gradient, width, height); }
+
+    // HBITMAP
+    COLOR_API HBITMAP ExportColorBufferAsHBITMAP(ColorBuffer* buffer, int targetWidth, int targetHeight) { return buffer->ToHBITMAP(targetWidth, targetHeight); }
+    COLOR_API ColorBuffer* CreateColorBufferFromHBITMAP(HBITMAP hBitmap, int width, int height) { return ColorBuffer::FromHBITMAP(hBitmap, width, height); }
+
+    // HDC
+    COLOR_API HDC ExportColorBufferAsHDC(ColorBuffer* buffer, int targetWidth, int targetHeight) { return buffer->ToHDC(targetWidth, targetHeight); }
+    COLOR_API ColorBuffer* CreateColorBufferFromHDC(HDC hdc, int x, int y, int width, int height) { return ColorBuffer::FromHDC(hdc, x, y, width, height); }
+
+    // HICON
+    COLOR_API HICON ExportColorBufferAsHICON(ColorBuffer* buffer, int targetWidth, int targetHeight) { return buffer->ToHICON(targetWidth, targetHeight); }
+    COLOR_API ColorBuffer* CreateColorBufferFromHICON(HICON hIcon) { return ColorBuffer::FromHICON(hIcon); }
+
+    // HCURSOR
+    COLOR_API HCURSOR ExportColorBufferAsHCURSOR(ColorBuffer* buffer, int targetWidth, int targetHeight) { return buffer->ToHCURSOR(targetWidth, targetHeight); }
+    COLOR_API ColorBuffer* CreateColorBufferFromHCURSOR(HCURSOR hCursor) { return ColorBuffer::FromHCURSOR(hCursor); }
+
+    COLOR_API ColorBuffer* CreateColorBufferFromHWND(HWND hWnd, int x, int y, int width, int height) { return ColorBuffer::FromHWND(hWnd, x, y, width, height); }
     #pragma endregion
 
     #pragma region ColorBuffer Functions
@@ -93,6 +110,7 @@ extern "C"
     COLOR_API void ColorBufferSwap(ColorBuffer* buffer, int index1, int index2) { buffer->Swap(index1, index2); }
     COLOR_API ColorBuffer* ColorBufferFilter(ColorBuffer* buffer, bool (*predicate)(Color*)) { return new ColorBuffer(buffer->Filter([predicate](const Color& color) { return predicate(const_cast<Color*>(&color)); })); }
     COLOR_API int ColorBufferCount(ColorBuffer* buffer, Color* color) { return buffer->Count(*color); }
+    COLOR_API size_t ColorBufferCountUniqueColors(ColorBuffer* buffer) { return buffer->CountUniqueColors(); }
     COLOR_API void ColorBufferShuffle(ColorBuffer* buffer) { buffer->Shuffle(); }
     COLOR_API void ColorBufferClear(ColorBuffer* buffer) { buffer->Clear(); }
     COLOR_API void ColorBufferSort(ColorBuffer* buffer, int (*compare)(Color*, Color*))
@@ -125,34 +143,7 @@ extern "C"
         return arr;
     }
 
-    COLOR_API void ColorBufferApplyMatrix(ColorBuffer* buffer,
-        double m11, double m12, double m13, double m14, double m15,
-        double m21, double m22, double m23, double m24, double m25,
-        double m31, double m32, double m33, double m34, double m35,
-        double m41, double m42, double m43, double m44, double m45,
-        double m51, double m52, double m53, double m54, double m55)
-    {
-        ColorMatrix matrix;
-        double m[25] = {
-            m11, m12, m13, m14, m15,
-            m21, m22, m23, m24, m25,
-            m31, m32, m33, m34, m35,
-            m41, m42, m43, m44, m45,
-            m51, m52, m53, m54, m55
-        };
-
-        for(int i = 0; i < 25; i++) matrix.data[i/5][i%5] = m[i];
-
-        #pragma omp parallel for
-        for (int i = 0; i < buffer->GetWidth() * buffer->GetHeight(); i++)
-        {
-            Color color = buffer->GetAt(i);
-            buffer->SetAt(i, color * matrix);
-        }
-    }
-
-    COLOR_API HBITMAP ExportColorBufferAsHBitmap(ColorBuffer* buffer, int targetWidth, int targetHeight) { return buffer->ToHBITMAP(targetWidth, targetHeight); }
-
+    COLOR_API void ColorBufferApplyMatrix(ColorBuffer* buffer, ColorMatrix* matrix) { buffer->ApplyMatrix(*matrix); }
     COLOR_API void DrawColorBuffer(ColorBuffer* buffer, HWND hwnd, int x, int y) { buffer->Draw(hwnd, x, y); }
     #pragma endregion
 }

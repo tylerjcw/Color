@@ -80,6 +80,8 @@ namespace KTLib
             Color m_borderColor = Color::Black();
             Color m_viewModeColor = Color::Black();
             Color m_highlightColor = Color::White();
+            bool m_isPreviewFlippedX = false;
+            bool m_isPreviewFlippedY = false;
 
             Gdiplus::Bitmap* m_buffer;
             ULONG_PTR m_gdiplusToken;

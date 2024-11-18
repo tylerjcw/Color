@@ -316,9 +316,6 @@ namespace KTLib
     {
         // Convert sRGB to XYZ D50
         this-> ToXYZ_D50(outR, outG, outB);
-        outR /= 100.0;
-        outG /= 100.0;
-        outB /= 100.0;
 
         // Convert XYZ D50 to linear ProPhoto RGB
         outR =  1.34578688164715830 * outR + -0.25557208737979464 * outG + -0.05110186497554526 * outB;
@@ -651,6 +648,79 @@ namespace KTLib
         );
     }
 
+    //HSP Functions
+    void Color::ToHSP(double& h, double& s, double& p) const
+    {
+        const double Pr = 0.299;
+        const double Pg = 0.587;
+        const double Pb = 0.114;
+
+        double r, g, b;
+        Normalize(r, g, b);
+
+        p = std::sqrt(r * r * Pr + g * g * Pg + b * b * Pb) * 255.0;
+
+        if (r == g && g == b)
+        {
+            h = 0.0;
+            s = 0.0;
+            return;
+        }
+
+        if (r >= g && g >= b) h = 60.0 * (g - b) / (r - b);
+        else if (g > r && r >= b) h = 60.0 * (2.0 - (r - b) / (g - b));
+        else if (g >= b && b > r) h = 60.0 * (2.0 + (b - r) / (g - r));
+        else if (b > g && g > r) h = 60.0 * (4.0 - (g - r) / (b - r));
+        else if (b > r && r >= g) h = 60.0 * (4.0 + (r - g) / (b - g));
+        else h = 60.0 * (6.0 - (b - g) / (r - g));
+
+        double min = std::min(std::min(r, g), b);
+        double max = std::max(std::max(r, g), b);
+        s = (max - min) / max * 100.0;
+    }
+
+    Color Color::FromHSP(double h, double s, double p, int a)
+    {
+        h = std::fmod(h, 360.0);
+        if (h < 0) h += 360.0;
+        s = std::clamp(s, 0.0, 100.0) / 100.0;
+        p = std::clamp(p, 0.0, 255.0) / 255.0;
+
+        double r, g, b;
+        if (s == 0.0)
+        {
+            r = g = b = p;
+        }
+        else
+        {
+            double sector = h / 60.0;
+            int i = static_cast<int>(sector);
+            double f = sector - i;
+
+            double vs = s * p;
+            double vsf = vs * f;
+            double mid1 = p - vs + vsf;
+            double mid2 = p - vsf;
+
+            switch (i)
+            {
+                case 0: r = p;      g = mid1;   b = p - vs; break;
+                case 1: r = mid2;   g = p;      b = p - vs; break;
+                case 2: r = p - vs; g = p;      b = mid1;   break;
+                case 3: r = p - vs; g = mid2;   b = p;      break;
+                case 4: r = mid1;   g = p - vs; b = p;      break;
+                case 5: r = p;      g = p - vs; b = mid2;   break;
+            }
+        }
+
+        return Color(
+            static_cast<uint8_t>(std::clamp(r * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(g * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(b * 255.0, 0.0, 255.0)),
+            a
+        );
+    }
+
     // CMYK Functions
     void Color::ToCMYK(double& c, double& m, double& y, double& k) const
     {
@@ -697,17 +767,13 @@ namespace KTLib
         this->ToLinearSRGB(newR, newG, newB);
 
         // Convert linear sRGB to XYZ D50
-        x = (0.4360747 * newR + 0.3850649 * newG + 0.1430804 * newB) * 100;
-        y = (0.2225045 * newR + 0.7168786 * newG + 0.0606169 * newB) * 100;
-        z = (0.0139322 * newR + 0.0971045 * newG + 0.7141733 * newB) * 100;
+        x = (0.4360747 * newR + 0.3850649 * newG + 0.1430804 * newB);
+        y = (0.2225045 * newR + 0.7168786 * newG + 0.0606169 * newB);
+        z = (0.0139322 * newR + 0.0971045 * newG + 0.7141733 * newB);
     }
 
     Color Color::FromXYZ_D50(double x, double y, double z, int a)
     {
-        x /= 100;
-        y /= 100;
-        z /= 100;
-
         // Convert XYZ D50 to linear sRGB
         double r =  3.1338561 * x - 1.6168667 * y - 0.4906146 * z;
         double g = -0.9787684 * x + 1.9161415 * y + 0.0334540 * z;
@@ -1129,12 +1195,6 @@ namespace KTLib
         return 449.0 * pow(n, 3) + 3525.0 * pow(n, 2) + 6823.3 * n + 5520.33;
     }
 
-    void Color::ShiftTemp(double amount)
-    {
-        double currentTemp = ToTemp();
-        *this = FromTemp(currentTemp + amount);
-    }
-
     double Color::ToDuv() const
     {
         // Convert to xy chromaticity
@@ -1235,6 +1295,8 @@ namespace KTLib
 
         *color = fromFunc(v1, v2, v3, color->a);
     }
+
+    void Color::ShiftTemp(double amount) { *this = FromTemp(ToTemp() + amount); }
 
     void Color::ShiftHue(double degrees) { ShiftColorComponent(this, degrees, &Color::ToHSL, &Color::FromHSL, 0, true); }
 
@@ -1594,19 +1656,24 @@ namespace KTLib
 
     std::string Color::ToString(const char* type, const std::string& format) const
     {
-        std::string result = format.empty() ? Color::GetDefaultFormat(type) : format;
+        std::string lowerType = type;
+        std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+        std::string result = format.empty() ? Color::GetDefaultFormat(lowerType.c_str()) : format;
 
-        auto replaceFormatter = [&](const std::string& placeholder, double value)
-        {
-            size_t pos = result.find(placeholder);
-            if (pos != std::string::npos)
-            {
+        auto replaceFormatter = [&](const std::string& placeholder, double value) {
+            std::string lowerPlaceholder = placeholder;
+            std::transform(lowerPlaceholder.begin(), lowerPlaceholder.end(), lowerPlaceholder.begin(), ::tolower);
+
+            std::string lowerResult = result;
+            std::transform(lowerResult.begin(), lowerResult.end(), lowerResult.begin(), ::tolower);
+
+            size_t pos = lowerResult.find(lowerPlaceholder);
+            if (pos != std::string::npos) {
                 size_t endPos = result.find('}', pos);
                 std::string formatSpec = result.substr(pos, endPos - pos + 1);
                 size_t precisionPos = formatSpec.find(':');
                 int precision = 0;
-                if (precisionPos != std::string::npos)
-                {
+                if (precisionPos != std::string::npos) {
                     precision = std::stoi(formatSpec.substr(precisionPos + 1));
                 }
                 std::ostringstream ss;
@@ -1615,7 +1682,7 @@ namespace KTLib
             }
         };
 
-        if (strcmp(type, "RGB") == 0)
+        if (strcmp(lowerType.c_str(), "rgb") == 0)
         {
             int r, g, b, a;
             ToRGB(r, g, b, a);
@@ -1624,7 +1691,7 @@ namespace KTLib
             replaceFormatter("{B", static_cast<double>(b));
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "LinearSRGB") == 0)
+        else if (strcmp(lowerType.c_str(), "linearsrgb") == 0)
         {
             double r, g, b;
             ToLinearSRGB(r, g, b);
@@ -1633,7 +1700,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "HSL") == 0)
+        else if (strcmp(lowerType.c_str(), "hsl") == 0)
         {
             double h, s, l;
             ToHSL(h, s, l);
@@ -1642,7 +1709,7 @@ namespace KTLib
             replaceFormatter("{L", l);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "HSV") == 0)
+        else if (strcmp(lowerType.c_str(), "hsv") == 0)
         {
             double h, s, v;
             ToHSV(h, s, v);
@@ -1651,7 +1718,7 @@ namespace KTLib
             replaceFormatter("{V", v);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "HSI") == 0)
+        else if (strcmp(lowerType.c_str(), "hsi") == 0)
         {
             double h, s, i;
             ToHSI(h, s, i);
@@ -1660,7 +1727,7 @@ namespace KTLib
             replaceFormatter("{I", i);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "HWB") == 0)
+        else if (strcmp(lowerType.c_str(), "hwb") == 0)
         {
             double h, w, b;
             ToHWB(h, w, b);
@@ -1669,7 +1736,16 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "CMYK") == 0)
+        else if (strcmp(lowerType.c_str(), "hsp") == 0)
+        {
+            double h, s, p;
+            ToHSP(h, s, p);
+            replaceFormatter("{H", h);
+            replaceFormatter("{S", s);
+            replaceFormatter("{P", p);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "cmyk") == 0)
         {
             double c, m, y, k;
             ToCMYK(c, m, y, k);
@@ -1679,7 +1755,7 @@ namespace KTLib
             replaceFormatter("{K", k);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "XYZ_D50") == 0)
+        else if (strcmp(lowerType.c_str(), "xyz_d50") == 0)
         {
             double x, y, z;
              ToXYZ_D50(x, y, z);
@@ -1688,7 +1764,7 @@ namespace KTLib
             replaceFormatter("{Z", z);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "XYZ_D65") == 0)
+        else if (strcmp(lowerType.c_str(), "xyz_d65") == 0)
         {
             double x, y, z;
              ToXYZ_D65(x, y, z);
@@ -1697,7 +1773,7 @@ namespace KTLib
             replaceFormatter("{Z", z);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "Lab") == 0)
+        else if (strcmp(lowerType.c_str(), "lab") == 0)
         {
             double l, a, b;
             ToLab(l, a, b);
@@ -1706,7 +1782,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{T", static_cast<double>(a));
         }
-        else if (strcmp(type, "YIQ") == 0)
+        else if (strcmp(lowerType.c_str(), "yiq") == 0)
         {
             double y, i, q;
             ToYIQ(y, i, q);
@@ -1715,16 +1791,16 @@ namespace KTLib
             replaceFormatter("{Q", q);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "YPbPr") == 0)
+        else if (strcmp(lowerType.c_str(), "ypbpr") == 0)
         {
             double y, cb, cr;
             ToYPbPr(y, cb, cr);
             replaceFormatter("{Y", y);
-            replaceFormatter("{Cb", cb);
-            replaceFormatter("{Cr", cr);
+            replaceFormatter("{Pb", cb);
+            replaceFormatter("{Pr", cr);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "LCHab") == 0)
+        else if (strcmp(lowerType.c_str(), "lchab") == 0)
         {
             double l, c, h;
             ToLCHab(l, c, h);
@@ -1733,7 +1809,7 @@ namespace KTLib
             replaceFormatter("{H", h);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "LCHuv") == 0)
+        else if (strcmp(lowerType.c_str(), "lchuv") == 0)
         {
             double l, c, h;
             ToLCHuv(l, c, h);
@@ -1742,7 +1818,7 @@ namespace KTLib
             replaceFormatter("{H", h);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "AdobeRGB") == 0)
+        else if (strcmp(lowerType.c_str(), "adobergb") == 0)
         {
             double r, g, b;
             ToAdobeRGB(r, g, b);
@@ -1751,7 +1827,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "ProPhotoRGB") == 0)
+        else if (strcmp(lowerType.c_str(), "prophotorgb") == 0)
         {
             double r, g, b;
             ToProPhotoRGB(r, g, b);
@@ -1760,7 +1836,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "Luv") == 0)
+        else if (strcmp(lowerType.c_str(), "luv") == 0)
         {
             double L, u, v;
             ToLuv(L, u, v);
@@ -1769,7 +1845,7 @@ namespace KTLib
             replaceFormatter("{V", v);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "Hex") == 0)
+        else if (strcmp(lowerType.c_str(), "hex") == 0)
         {
             std::string a, r, g, b;
             ToHex(a, r, g, b);
@@ -1777,18 +1853,23 @@ namespace KTLib
             result = Color::ReplaceAll(result, "{R}", r);
             result = Color::ReplaceAll(result, "{G}", g);
             result = Color::ReplaceAll(result, "{B}", b);
+            result = Color::ReplaceAll(result, "{a}", a);
+            result = Color::ReplaceAll(result, "{r}", r);
+            result = Color::ReplaceAll(result, "{g}", g);
+            result = Color::ReplaceAll(result, "{b}", b);
         }
-        else if (strcmp(type, "NCol") == 0)
+        else if (strcmp(lowerType.c_str(), "ncol") == 0)
         {
             std::string n;
             double c, l;
             ToNCol(n, c, l);
             result = Color::ReplaceAll(result, "{H}", n);
+            result = Color::ReplaceAll(result, "{h}", n);
             replaceFormatter("{W", c);
             replaceFormatter("{B", (100 - l));
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "Rec2020") == 0)
+        else if (strcmp(lowerType.c_str(), "rec2020") == 0)
         {
             double r, g, b;
             ToRec2020(r, g, b);
@@ -1797,7 +1878,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "DisplayP3") == 0)
+        else if (strcmp(lowerType.c_str(), "displayp3") == 0)
         {
             double r, g, b;
             ToDisplayP3(r, g, b);
@@ -1806,7 +1887,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
-        else if (strcmp(type, "OKLab") == 0)
+        else if (strcmp(lowerType.c_str(), "oklab") == 0)
         {
             double l, a, b;
             ToOKLab(l, a, b);
@@ -1815,7 +1896,7 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{T", static_cast<double>(this->a));
         }
-        else if (strcmp(type, "OKLCH") == 0)
+        else if (strcmp(lowerType.c_str(), "oklch") == 0)
         {
             double l, c, h;
             ToOKLCH(l, c, h);

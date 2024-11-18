@@ -16,6 +16,7 @@ namespace KTLib
         public:
             Showcase(Color* color, const char* title);
             Showcase(Gradient* gradient, const char* title);
+            Showcase(ColorBuffer* buffer, const char* title);
             ~Showcase();
 
             int Show();
@@ -25,10 +26,15 @@ namespace KTLib
             std::string m_title;
             Color* m_color;
             Gradient* m_gradient;
+            ColorBuffer* m_buffer;
             bool m_isColor;
+            bool m_isGradient;
             HFONT m_hFont;
             int m_fontHeight;
-            int m_messageLines;
+            int m_bufferWidth;
+            int m_bufferHeight;
+            int m_bufferUnique;
+            Color m_bufferAverage;
 
             static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
             void CreateControls();
@@ -36,6 +42,7 @@ namespace KTLib
             void DrawPreview(HDC hdc);
             void DrawColorInfo(HDC hdc);
             void DrawGradientInfo(HDC hdc);
+            void DrawColorBufferInfo(HDC hdc);
             std::wstring ToWString(const std::string& str) { return std::wstring(str.begin(), str.end()); }
     };
 }

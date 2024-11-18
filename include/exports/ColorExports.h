@@ -184,6 +184,8 @@ extern "C"
     COLOR_API Color* ColorFromHSI(double h, double s, double i, double a);
     COLOR_API void ColorToHWB(Color* color, double* h, double* w, double* b, int* a);
     COLOR_API Color* ColorFromHWB(double h, double w, double b, double a);
+    COLOR_API void ColorToHSP(Color* color, double* h, double* s, double* p, int* a);
+    COLOR_API Color* ColorFromHSP(double h, double s, double p, int a);
     COLOR_API void ColorToCMYK(Color* color, double* c, double* m, double* y, double* k, int* a);
     COLOR_API Color* ColorFromCMYK(double c, double m, double y, double k, double a);
     COLOR_API void ColorToXYZ_D50(Color* color, double* x, double* y, double* z, int* a);
@@ -244,22 +246,7 @@ extern "C"
     #pragma endregion
 
     #pragma region Matrix operations
-    COLOR_API Color* ColorMultiplyMatrix(Color* color,
-        double m11, double m12, double m13, double m14, double m15,
-        double m21, double m22, double m23, double m24, double m25,
-        double m31, double m32, double m33, double m34, double m35,
-        double m41, double m42, double m43, double m44, double m45,
-        double m51, double m52, double m53, double m54, double m55);
-
-    COLOR_API Color* ColorAddMatrix(Color* color,
-        double m11, double m12, double m13,
-        double m21, double m22, double m23,
-        double m31, double m32, double m33);
-
-    COLOR_API Color* ColorSubtractMatrix(Color* color,
-        double m11, double m12, double m13,
-        double m21, double m22, double m23,
-        double m31, double m32, double m33);
+    COLOR_API Color* ColorApplyMatrix(Color* color, ColorMatrix* matrix);
     #pragma endregion
 
     #pragma region Utility functions
@@ -270,6 +257,22 @@ extern "C"
     COLOR_API bool IsColorAccessible(Color* color, Color* background, int level);
     COLOR_API Color* CreateRandomColor(int alphaRand);
     COLOR_API void ColorToString(Color* color, const char* type, const char* format, char* outStr);
+    COLOR_API COLORREF ColorToCOLORREF(Color* color);
+    COLOR_API Color* ColorFromCOLORREF(COLORREF colorref);
+    COLOR_API Gdiplus::Color ColorToGdipColor(Color* color);
+    COLOR_API Color* ColorFromGdipColor(UINT64 gdipColor);
     COLOR_API void FreeColorArray(Color** colors, int count);
+    #pragma endregion
+
+    #pragma region ColorMatrix exports
+    COLOR_API ColorMatrix* CreateColorMatrix();
+    COLOR_API void DeleteColorMatrix(ColorMatrix* matrix);
+    COLOR_API ColorMatrix* MultiplyMatrixByScalar(ColorMatrix* matrix, double factor);
+    COLOR_API ColorMatrix* MultiplyMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2);
+    COLOR_API ColorMatrix* AddMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2);
+    COLOR_API ColorMatrix* SubtractMatrices(ColorMatrix* matrix1, ColorMatrix* matrix2);
+    COLOR_API ColorMatrix* TransposeMatrix(ColorMatrix* matrix);
+    COLOR_API void SetMatrixValue(ColorMatrix* matrix, int row, int col, double value);
+    COLOR_API double GetMatrixValue(ColorMatrix* matrix, int row, int col);
     #pragma endregion
 }

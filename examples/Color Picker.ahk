@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #Include <Color>
 
-if (col := ColorPicker.RunDefault())
+col := ColorPicker.RunDefault()
+if (col)
     Showcase(col, "Picked Color")

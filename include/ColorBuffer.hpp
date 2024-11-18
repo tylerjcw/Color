@@ -20,8 +20,15 @@ namespace KTLib
             void Rotate(double angle);
             void Resize(int newWidth, int newHeight, int resizeImage, Color fillColor);
             void Scale(double scale);
-            static ColorBuffer* FromHBITMAP(HBITMAP hBitmap, int targetWidth = 0, int targetHeight = 0);
             HBITMAP ToHBITMAP(int targetWidth = 0, int targetHeight = 0) const;
+            static ColorBuffer* FromHBITMAP(HBITMAP hBitmap, int width = 0, int height = 0);
+            HDC ToHDC(int width, int height) const;
+            static ColorBuffer* FromHDC(HDC hdc, int x, int y, int width, int height);
+            HICON ToHICON(int width, int height) const;
+            static ColorBuffer* FromHICON(HICON hIcon);
+            HCURSOR ToHCURSOR(int width, int height) const;
+            static ColorBuffer* FromHCURSOR(HCURSOR hCursor);
+            static ColorBuffer* FromHWND(HWND hWnd, int x, int y, int width, int height);
             void Draw(HWND hwnd, int x, int y) const;
 
             int GetWidth() const { return m_width; }
@@ -47,6 +54,8 @@ namespace KTLib
             void SetGreen(int value);
             void SetBlue(int value);
             void SetAlpha(int value);
+
+            void ApplyMatrix(const ColorMatrix& matrix);
 
             void Invert();
             void ShiftHue(double degrees);
@@ -90,6 +99,7 @@ namespace KTLib
 
             ColorBuffer* Copy() const;
             ColorBuffer* CopyRegion(int xmin, int ymin, int width, int height) const;
+            size_t CountUniqueColors() const;
             void MapColors(int x, int y, int width, int height, unsigned int (*mapFunction)(int, int, unsigned int));
             void ForEach(const std::function<void(const Color&)>& func) const;
             int Find(const Color& color) const;
@@ -103,7 +113,7 @@ namespace KTLib
             void AppendRight(const ColorBuffer& other);
             void AppendBottom(const ColorBuffer& other);
             std::vector<int> FindAll(const Color& color) const;
-            Color CalculateAverageColor(int startX, int startY, int pixelWidth, int pixelHeight);
+            Color CalculateAverageColor(int startX = 0, int startY = 0, int pixelWidth = 0, int pixelHeight = 0);
 
         private:
             alignas(32) std::vector<Color> m_colors;

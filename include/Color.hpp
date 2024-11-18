@@ -2,9 +2,11 @@
 
 #include "Constants.h"
 
+#include <unordered_set>
 #include <functional>
 #include <algorithm>
 #include <windows.h>
+#include <gdiplus.h>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -21,7 +23,49 @@ namespace KTLib
         ColorMatrix operator*(double factor) const
         {
             ColorMatrix result;
+            #pragma omp parallel for
             for(int i = 0; i < 25; i++) result.data[i/5][i%5] = data[i/5][i%5] * factor;
+            return result;
+        }
+
+        ColorMatrix operator*(const ColorMatrix& other) const
+        {
+            ColorMatrix result;
+            #pragma omp parallel for collapse(2)
+            for(int i = 0; i < 5; i++)
+            {
+                for(int j = 0; j < 5; j++)
+                {
+                    result.data[i][j] = 0;
+                    for(int k = 0; k < 5; k++) result.data[i][j] += data[i][k] * other.data[k][j];
+                }
+            }
+            return result;
+        }
+
+        ColorMatrix operator+(const ColorMatrix& other) const
+        {
+            ColorMatrix result;
+            #pragma omp parallel for
+            for(int i = 0; i < 25; i++) result.data[i/5][i%5] = data[i/5][i%5] + other.data[i/5][i%5];
+            return result;
+        }
+
+        ColorMatrix operator-(const ColorMatrix& other) const
+        {
+            ColorMatrix result;
+            #pragma omp parallel for
+            for(int i = 0; i < 25; i++) result.data[i/5][i%5] = data[i/5][i%5] - other.data[i/5][i%5];
+            return result;
+        }
+
+        ColorMatrix Transpose() const
+        {
+            ColorMatrix result;
+            #pragma omp parallel for collapse(2)
+            for(int i = 0; i < 5; i++)
+                for(int j = 0; j < 5; j++)
+                    result.data[i][j] = data[j][i];
             return result;
         }
 
@@ -32,6 +76,7 @@ namespace KTLib
     {
         private:
             std::string formatString;
+            std::string typeString;
         public:
             union
             {
@@ -91,6 +136,8 @@ namespace KTLib
             friend std::ostream& operator<<(std::ostream& os, const Color& color) { return os << std::to_string(color.ToInt()); }
 
             int ToInt(int format = 0) const;
+            uint64_t GetARGB() const { return argb; }
+            void SetARGB(int newARGB) { argb = static_cast<uint64_t>(newARGB); }
             int GetAlpha() const { return a; }
             void SetAlpha(int alpha) { a = static_cast<uint8_t>(alpha); }
             void ShiftAlpha(int delta) { a = std::clamp(a + delta, 0, 255); }
@@ -113,12 +160,21 @@ namespace KTLib
             bool IsDark() const { return GetLuminance() <= 0.5; }
             const std::string& GetFormatString() const { return formatString; }
             void SetFormatString(const std::string& format) { formatString = format; }
-            std::string ToString(const char* type, const std::string& format = "") const;
+            const std::string& GetTypeString() const { return typeString; }
+            void SetTypeString(const std::string& type) { typeString = type; }
+            std::string ToString(const char* type = "", const std::string& format = "") const;
             static std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
             static std::string GetDefaultFormat(const char* type);
 
             void ToHex(std::string& outA, std::string& outR, std::string& outG, std::string& outB) const;
             void ToRGB(int& outR, int& outG, int& outB, int& outA) const;
+
+            COLORREF ToCOLORREF() const { return RGB(r, g, b); }
+            static Color FromCOLORREF(COLORREF colorref)  { return Color(GetRValue(colorref), GetGValue(colorref), GetBValue(colorref), 255); }
+
+            Gdiplus::Color ToGdipColor() const  { return Gdiplus::Color(a, r, g, b); }
+            static Color FromGdipColor(const Gdiplus::Color& color)  { return Color(color.GetR(), color.GetG(), color.GetB(), color.GetA()); }
+
             double GetHue() const;
             void ToLinearSRGB(double& outR, double& outG, double& outB) const;
             static Color FromLinearSRGB(double r, double g, double b, int a = 255);
@@ -134,6 +190,8 @@ namespace KTLib
             static Color FromHSI(double h, double s, double i, int a = 255);
             void ToHWB(double& h, double& w, double& b) const;
             static Color FromHWB(double h, double w, double b, int a = 255);
+            void ToHSP(double& h, double& s, double& p) const;
+            static Color FromHSP(double h, double s, double p, int a = 255);
             void ToCMYK(double& c, double& m, double& y, double& k) const;
             static Color FromCMYK(double c, double m, double y, double k, int a = 255);
             void ToXYZ_D50(double& x, double& y, double& z) const;
@@ -162,10 +220,9 @@ namespace KTLib
             static Color FromOKLab(double l, double a, double b, int alpha = 255);
             void ToOKLCH(double& outL, double& outC, double& outH) const;
             static Color FromOKLCH(double l, double c, double h, int alpha = 255);
+            double ToDuv() const;
             double ToTemp() const;
             static Color FromTemp(double temp);
-            void ShiftTemp(double amount);
-            double ToDuv() const;
 
             static std::vector<Color> Monochromatic(const Color* input, int count);
             static std::vector<Color> Analogous(const Color* input, double angle = 30, int count = 3);
@@ -183,6 +240,7 @@ namespace KTLib
 
             static void ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, bool isHue = false);
 
+            void ShiftTemp(double amount);
             void ShiftHue(double degrees);
             void ShiftSaturation(double amount);
             void ShiftLightness(double amount);
@@ -355,5 +413,15 @@ namespace KTLib
             static inline Color WhiteTransparent()     { return Color(0x00FFFFFF); }
             static inline Color Yellow()               { return Color(0xFFFFFF00); }
             static inline Color YellowGreen()          { return Color(0xFF9ACD32); }
+    };
+}
+
+namespace std
+{
+    template<>
+    struct hash<KTLib::Color>
+    {
+        template<typename = void>
+        size_t operator()(const KTLib::Color& color) const noexcept { return hash<uint32_t>()(color.ToInt());}
     };
 }

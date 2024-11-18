@@ -10,6 +10,7 @@ namespace KTLib
         , m_color(color)
         , m_gradient(nullptr)
         , m_isColor(true)
+        , m_isGradient(false)
     { }
 
     Showcase::Showcase(Gradient* gradient, const char* title)
@@ -18,9 +19,24 @@ namespace KTLib
         , m_color(nullptr)
         , m_gradient(gradient)
         , m_isColor(false)
+        , m_isGradient(true)
     { }
 
-    Showcase::~Showcase() { if (m_hwnd) DestroyWindow(m_hwnd); }
+    Showcase::Showcase(ColorBuffer* buffer, const char* title)
+        : m_hwnd(nullptr)
+        , m_title(title)
+        , m_color(nullptr)
+        , m_gradient(nullptr)
+        , m_buffer(new ColorBuffer(*buffer))
+        , m_isColor(false)
+        , m_isGradient(false)
+        , m_bufferWidth(buffer->GetWidth())
+        , m_bufferHeight(buffer->GetHeight())
+        , m_bufferUnique(buffer->CountUniqueColors())
+        , m_bufferAverage(buffer->CalculateAverageColor())
+    { }
+
+    Showcase::~Showcase() { if (m_hwnd) DestroyWindow(m_hwnd); if (m_buffer) delete m_buffer; }
 
     int Showcase::Show()
     {
@@ -76,6 +92,16 @@ namespace KTLib
             this
         );
 
+        int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+        int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        RECT windowRect;
+        GetWindowRect(m_hwnd, &windowRect);
+        int windowWidth = windowRect.right - windowRect.left;
+        int windowHeight = windowRect.bottom - windowRect.top;
+        int x = (screenWidth - windowWidth) / 2;
+        int y = (screenHeight - windowHeight) / 2;
+
+        SetWindowPos(m_hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
         CreateControls();
         LayoutControls();
         ShowWindow(m_hwnd, SW_SHOW);
@@ -119,6 +145,7 @@ namespace KTLib
                     showcase->DrawPreview(hdc);
                     if (showcase->m_isColor) showcase->DrawColorInfo(hdc);
                     else if (showcase->m_gradient) showcase->DrawGradientInfo(hdc);
+                    else if (showcase->m_buffer) showcase->DrawColorBufferInfo(hdc);
                 }
 
                 EndPaint(hwnd, &ps);
@@ -194,17 +221,23 @@ namespace KTLib
             SelectObject(hdc, oldPen);
             DeleteObject(pen);
         }
-        else if (m_gradient)
+        else if (m_isGradient && m_gradient)
         {
             // Create compatible DC for the gradient bitmap
             HDC memDC = CreateCompatibleDC(hdc);
             HBITMAP hBitmap = m_gradient->CreateHBITMAP(100, 100);  // Match preview size
             SelectObject(memDC, hBitmap);
-
-            // Draw the gradient bitmap
             BitBlt(hdc, previewRect.left, previewRect.top, 100, 100, memDC, 0, 0, SRCCOPY);
-
-            // Clean up
+            DeleteDC(memDC);
+            DeleteObject(hBitmap);
+        }
+        else if (m_buffer)
+        {
+            HDC memDC = CreateCompatibleDC(hdc);
+            m_buffer->Resize(0, 100, 1, Color::Black()); // Resize height to 100 pixels, while maintaining aspect ratio
+            HBITMAP hBitmap = m_buffer->ToHBITMAP();
+            SelectObject(memDC, hBitmap);
+            BitBlt(hdc, previewRect.left, previewRect.top, 100, 100, memDC, 0, 0, SRCCOPY);
             DeleteDC(memDC);
             DeleteObject(hBitmap);
         }
@@ -286,5 +319,19 @@ namespace KTLib
         }
 
         SelectObject(hdc, hOldFont);
+    }
+
+    void Showcase::DrawColorBufferInfo(HDC hdc)
+    {
+        RECT rect = { 120, 10, 400, 100 };
+
+        std::string info = "Width: " + std::to_string(m_bufferWidth) + "\n";
+        info += "Height: " + std::to_string(m_bufferHeight) + "\n";
+        info += "Size: " + std::to_string(m_bufferWidth * m_bufferHeight) + " pixels\n";
+        info += "Unique Colors: " + std::to_string(m_bufferUnique) + "\n";
+        info += "Average Color: " + m_bufferAverage.ToString("Hex", "#{A}{R}{G}{B}");
+
+        std::wstring winfo(info.begin(), info.end());
+        DrawTextW(hdc, winfo.c_str(), -1, &rect, DT_LEFT);
     }
 }

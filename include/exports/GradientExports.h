@@ -13,7 +13,7 @@ extern "C"
     #pragma endregion
 
     #pragma region Gradient Functions
-    GRADIENT_API void GradientDeleteGradient(Gradient* gradient);
+    GRADIENT_API void DeleteGradient(Gradient* gradient);
     GRADIENT_API void GradientSetAngle(Gradient* gradient, float degrees);
     GRADIENT_API float GradientGetAngle(Gradient* gradient);
     GRADIENT_API int GradientGetVertices(Gradient* gradient);
