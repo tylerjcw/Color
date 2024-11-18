@@ -125,7 +125,7 @@ ConvertColor(*)
     ;try
     ;{
         ; build this RegEx to match all color formats except hex, and pull out their type and channels
-        chT  := "(?<type>[a-z]+)\("                 ; Matches the origin color type "ncol", "rgb", "hsl", etc...
+        chT  := "(?<type>[a-z0-9]+)\("                 ; Matches the origin color type "ncol", "rgb", "hsl", etc...
         ch1  := "(?<ch1>[RYGCBMrygcbm]??\d+(\.\d+)?)%?, ?" ; The first channel of the color
         ch2  := "(?<ch2>-?\d+(\.\d+)?)%?, ?"        ; The second channel of the color
         ch3  := "(?<ch3>-?\d+(\.\d+)?)%?(\)|, )?"   ; The third channel of the color
@@ -345,7 +345,7 @@ ConvertColor(*)
         componentControls["Rec2020"]["3"].Text := "B: " . Round(rec2020.B, 4)
 
         displayp3 := col.ToDisplayP3()
-        labelControls["DisplayP3"].Text := col.ToString("Rec2020")
+        labelControls["DisplayP3"].Text := col.ToString("DisplayP3")
         componentControls["DisplayP3"]["1"].Text := "R: " . Round(displayp3.R, 4)
         componentControls["DisplayP3"]["2"].Text := "G: " . Round(displayp3.G, 4)
         componentControls["DisplayP3"]["3"].Text := "B: " . Round(displayp3.B, 4)

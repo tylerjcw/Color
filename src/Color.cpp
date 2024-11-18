@@ -1637,7 +1637,7 @@ namespace KTLib
         if (strcmp(type, "LCHab") == 0)       return "lchab({L}, {C}, {H})";
         if (strcmp(type, "YPbPr") == 0)       return "ypbpr({Y}, {Cb}, {Cr})";
         if (strcmp(type, "Rec2020") == 0)     return "rec2020({R}, {G}, {B})";
-        if (strcmp(type, "DisplayP3") == 0)   return "display-p3({R}, {G}, {B})";
+        if (strcmp(type, "DisplayP3") == 0)   return "displayp3({R}, {G}, {B})";
         if (strcmp(type, "OKLab") == 0)       return "oklab({L}, {A}, {B})";
         if (strcmp(type, "OKLCH") == 0)       return "oklch({L}, {C}, {H})";
         throw std::invalid_argument("Unsupported color type");
@@ -1758,7 +1758,7 @@ namespace KTLib
         else if (strcmp(lowerType.c_str(), "xyz_d50") == 0)
         {
             double x, y, z;
-             ToXYZ_D50(x, y, z);
+            ToXYZ_D50(x, y, z);
             replaceFormatter("{X", x);
             replaceFormatter("{Y", y);
             replaceFormatter("{Z", z);
@@ -1767,7 +1767,7 @@ namespace KTLib
         else if (strcmp(lowerType.c_str(), "xyz_d65") == 0)
         {
             double x, y, z;
-             ToXYZ_D65(x, y, z);
+            ToXYZ_D65(x, y, z);
             replaceFormatter("{X", x);
             replaceFormatter("{Y", y);
             replaceFormatter("{Z", z);
