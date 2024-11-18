@@ -1474,7 +1474,7 @@ class Color
          * Default format string for DisplayP3 color representation.
          * @type {string}
          */
-        static DisplayP3 := "display-p3({R:2}, {G:2}, {B:2})"
+        static DisplayP3 := "displayp3({R:2}, {G:2}, {B:2})"
 
         /**
          * Default format string for OKLab color representation.
