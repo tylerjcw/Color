@@ -33,6 +33,13 @@ namespace KTLib
         m_colorStops.push_back(ColorStop(0.83f, Color::Fuchsia()));
         m_colorStops.push_back(ColorStop(1.0f, Color::Red()));
     }
+
+    Gradient::Gradient(int totalSteps, const std::vector<ColorStop>& stops) : m_totalSteps(totalSteps), m_type(GradientType::Linear)
+    {
+        m_colorStops = stops;
+        processColorStops();
+    }
+
     #pragma endregion
 
     #pragma region Gradient Functions
@@ -168,12 +175,22 @@ namespace KTLib
         return std::clamp(position, 0.0f, 1.0f);
     }
 
-    void Gradient::RemoveColorStop(float position)
+    void Gradient::RemoveColorStopAt(int index)
     {
-        m_colorStops.erase(
-            std::remove_if(m_colorStops.begin(), m_colorStops.end(),
-                [position](const ColorStop& stop) { return std::abs(stop.position - position) < 1e-6; }),
-            m_colorStops.end());
+        if (index >= 0 && static_cast<size_t>(index) < m_colorStops.size())
+        {
+            m_colorStops.erase(m_colorStops.begin() + index);
+            processColorStops();
+        }
+    }
+
+    void Gradient::UpdateColorStop(int index, const ColorStop& colorStop)
+    {
+        if (index >= 0 && static_cast<size_t>(index) < m_colorStops.size())
+        {
+            m_colorStops[index] = colorStop;
+            processColorStops();
+        }
     }
 
     Color Gradient::GetColorAt(float position) const
@@ -391,13 +408,13 @@ namespace KTLib
 
     HBITMAP Gradient::CreateHBITMAP(int width, int height) const
     {
-        ColorBuffer buffer(*this, width, height);
+        Canvas buffer(*this, width, height);
         return buffer.ToHBITMAP();
     }
 
     void Gradient::Draw(HWND hwnd, int x, int y, int width, int height) const
     {
-        ColorBuffer buffer(*this, width, height);
+        Canvas buffer(*this, width, height);
         buffer.Draw(hwnd, x, y);
     }
     #pragma endregion

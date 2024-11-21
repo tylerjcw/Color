@@ -6,67 +6,117 @@ extern "C"
     COLOR_API void ColorToRGB(Color* color, int* r, int* g, int* b, int* a) { color->ToRGB(*r, *g, *b, *a); }
 
     COLOR_API Color* ColorFromHSI(double h, double s, double i, double a) { return new Color(Color::FromHSI(h, s, i, a)); }
-    COLOR_API void ColorToHSI(Color* color, double* h, double* s, double* i, int* a)
-    {
-        color->ToHSI(*h, *s, *i);
-        *a = color->a;
-    }
+    COLOR_API void ColorToHSI(Color* color, double* h, double* s, double* i, int* a) { color->ToHSI(*h, *s, *i); *a = color->a; }
 
     COLOR_API Color* ColorFromHSL(double h, double s, double l, int a) { return new Color(Color::FromHSL(h, s, l, a)); }
-    COLOR_API void ColorToHSL(Color* color, double* h, double* s, double* l, int* a)
-    {
-        color->ToHSL(*h, *s, *l);
-        *a = color->a;
-    }
+    COLOR_API void ColorToHSL(Color* color, double* h, double* s, double* l, int* a) { color->ToHSL(*h, *s, *l); *a = color->a; }
 
     COLOR_API Color* ColorFromHWB(double h, double w, double b, double a) { return new Color(Color::FromHWB(h, w, b, a)); }
-    COLOR_API void ColorToHWB(Color* color, double* h, double* w, double* b, int* a)
-    {
-        color->ToHWB(*h, *w, *b);
-        *a = color->a;
-    }
+    COLOR_API void ColorToHWB(Color* color, double* h, double* w, double* b, int* a) { color->ToHWB(*h, *w, *b); *a = color->a; }
 
     COLOR_API Color* ColorFromHSP(double h, double s, double p, int a) { return new Color(Color::FromHSP(h, s, p, a)); }
-    COLOR_API void ColorToHSP(Color* color, double* h, double* s, double* p, int* a)
-    {
-        color->ToHSP(*h, *s, *p);
-        *a = color->a;
-    }
+    COLOR_API void ColorToHSP(Color* color, double* h, double* s, double* p, int* a) { color->ToHSP(*h, *s, *p); *a = color->a; }
+
+    COLOR_API Color* ColorFromHCY(double h, double c, double y, int a) { return new Color(Color::FromHCY(h, c, y, a)); }
+    COLOR_API void ColorToHCY(Color* color, double* h, double* c, double* y, int* a) { color->ToHCY(*h, *c, *y); *a = color->a; }
+
+    COLOR_API Color* ColorFromHCG(double h, double c, double g, int a) { return new Color(Color::FromHCG(h, c, g, a)); }
+    COLOR_API void ColorToHCG(Color* color, double* h, double* c, double* g, int* a) { color->ToHCG(*h, *c, *g); *a = color->a; }
+
+    COLOR_API Color* ColorFromTSL(double t, double s, double l, int a) { return new Color(Color::FromTSL(t, s, l, a)); }
+    COLOR_API void ColorToTSL(Color* color, double* t, double* s, double* l, int* a) { color->ToTSL(*t, *s, *l); *a = color->a; }
+
+    COLOR_API Color* ColorFromCMY(double c, double m, double y, int a) { return new Color(Color::FromCMY(c, m, y, a)); }
+    COLOR_API void ColorToCMY(Color* color, double* c, double* m, double* y, int* a) { color->ToCMY(*c, *m, *y); *a = color->a; }
 
     COLOR_API Color* ColorFromCMYK(double c, double m, double y, double k, double a) { return new Color(Color::FromCMYK(c, m, y, k, a)); }
-    COLOR_API void ColorToCMYK(Color* color, double* c, double* m, double* y, double* k, int* a)
-    {
-        color->ToCMYK(*c, *m, *y, *k);
-        *a = color->a;
-    }
+    COLOR_API void ColorToCMYK(Color* color, double* c, double* m, double* y, double* k, int* a) { color->ToCMYK(*c, *m, *y, *k); *a = color->a; }
 
     COLOR_API Color* ColorFromXYZ_D50(double x, double y, double z, double a) { return new Color(Color::FromXYZ_D50(x, y, z, a)); }
-    COLOR_API void ColorToXYZ_D50(Color* color, double* x, double* y, double* z, int* a)
-    {
-        color->ToXYZ_D50(*x, *y, *z);
-        *a = color->a;
-    }
+    COLOR_API void ColorToXYZ_D50(Color* color, double* x, double* y, double* z, int* a) { color->ToXYZ_D50(*x, *y, *z); *a = color->a; }
 
     COLOR_API Color* ColorFromXYZ_D65(double x, double y, double z, double a) { return new Color(Color::FromXYZ_D65(x, y, z, a)); }
-    COLOR_API void ColorToXYZ_D65(Color* color, double* x, double* y, double* z, int* a)
-    {
-        color-> ToXYZ_D65(*x, *y, *z);
-        *a = color->a;
-    }
+    COLOR_API void ColorToXYZ_D65(Color* color, double* x, double* y, double* z, int* a) { color-> ToXYZ_D65(*x, *y, *z); *a = color->a; }
+
+    COLOR_API void ColorToUCS(Color* color, double* u, double* v, double* w, int* a) { color->ToUCS(*u, *v, *w); *a = color->a; }
+    COLOR_API Color* ColorFromUCS(double u, double v, double w, int a) { return new Color(Color::FromUCS(u, v, w, a)); }
+
+    COLOR_API void ColorToUVW(Color* color, double* u, double* v, double* w, int* a) { color->ToUVW(*u, *v, *w); *a = color->a; }
+    COLOR_API Color* ColorFromUVW(double u, double v, double w, int a) { return new Color(Color::FromUVW(u, v, w, a)); }
+
+    COLOR_API Color* ColorFromXYY(double x, double y, double Y, int a) { return new Color(Color::FromXYY(x, y, Y, a)); }
+    COLOR_API void ColorToXYY(Color* color, double* x, double* y, double* Y, int* a) { color->ToXYY(*x, *y, *Y); *a = color->a; }
 
     COLOR_API Color* ColorFromLab(double l, double a, double b, double alpha) { return new Color(Color::FromLab(l, a, b, alpha)); }
-    COLOR_API void ColorToLab(Color* color, double* l, double* a, double* b, int* t)
-    {
-        color->ToLab(*l, *a, *b);
-        *t = color->a;
-    }
+    COLOR_API void ColorToLab(Color* color, double* l, double* a, double* b, int* t) { color->ToLab(*l, *a, *b); *t = color->a; }
 
     COLOR_API Color* ColorFromYIQ(double y, double i, double q, double a) { return new Color(Color::FromYIQ(y, i, q, a)); }
-    COLOR_API void ColorToYIQ(Color* color, double* y, double* i, double* q, int* a)
-    {
-        color->ToYIQ(*y, *i, *q);
-        *a = color->a;
-    }
+    COLOR_API void ColorToYIQ(Color* color, double* y, double* i, double* q, int* a) { color->ToYIQ(*y, *i, *q); *a = color->a; }
+
+    COLOR_API Color* ColorFromLinearSRGB(double r, double g, double b, int a) { return new Color(Color::FromLinearSRGB(r, g, b, a)); }
+    COLOR_API void ColorToLinearSRGB(Color* color, double* r, double* g, double* b, int* a) { color->ToLinearSRGB(*r, *g, *b); *a = color->a; }
+
+    COLOR_API Color* ColorFromHSV(double h, double s, double v, int a) { return new Color(Color::FromHSV(h, s, v, a)); }
+    COLOR_API void ColorToHSV(Color* color, double* h, double* s, double* v, int* a) { color->ToHSV(*h, *s, *v); *a = color->a; }
+
+    COLOR_API Color* ColorFromYPbPr(double y, double cb, double cr, int a) { return new Color(Color::FromYPbPr(y, cb, cr, a)); }
+    COLOR_API void ColorToYPbPr(Color* color, double* y, double* cb, double* cr, int* a) { color->ToYPbPr(*y, *cb, *cr); *a = color->a; }
+
+    COLOR_API Color* ColorFromYCbCr(double y, double cb, double cr, int a, int type) { return new Color(Color::FromYCbCr(y, cb, cr, a, static_cast<YCbCrType>(type))); }
+    COLOR_API void ColorToYCbCr(Color* color, double* y, double* cb, double* cr, int* a, int type) { color->ToYCbCr(*y, *cb, *cr, static_cast<YCbCrType>(type)); *a = color->a; }
+
+    COLOR_API Color* ColorFromYCgCo(double y, double cg, double co, int a) { return new Color(Color::FromYCgCo(y, cg, co, a)); }
+    COLOR_API void ColorToYCgCo(Color* color, double* y, double* cg, double* co, int* a) { color->ToYCgCo(*y, *cg, *co); *a = color->a; }
+
+    COLOR_API Color* ColorFromYcCbcCrc(double y, double cb, double cr, int a) { return new Color(Color::FromYcCbcCrc(y, cb, cr, a)); }
+    COLOR_API void ColorToYcCbcCrc(Color* color, double* y, double* cb, double* cr, int* a) { color->ToYcCbcCrc(*y, *cb, *cr); *a = color->a; }
+
+    COLOR_API Color* ColorFromYDbDr(double y, double db, double dr, int a) { return new Color(Color::FromYDbDr(y, db, dr, a)); }
+    COLOR_API void ColorToYDbDr(Color* color, double* y, double* db, double* dr, int* a) { color->ToYDbDr(*y, *db, *dr); *a = color->a; }
+
+    COLOR_API Color* ColorFromYUV(double y, double u, double v, int a) { return new Color(Color::FromYUV(y, u, v, a)); }
+    COLOR_API void ColorToYUV(Color* color, double* y, double* u, double* v, int* a) { color->ToYUV(*y, *u, *v); *a = color->a; }
+
+    COLOR_API Color* ColorFromYES(double y, double e, double s, int a) { return new Color(Color::FromYES(y, e, s, a)); }
+    COLOR_API void ColorToYES(Color* color, double* y, double* e, double* s, int* a) { color->ToYES(*y, *e, *s); *a = color->a; }
+
+    COLOR_API void ColorToJPEG(Color* color, double* y, double* cb, double* cr, int* a) { color->ToACEScg(*y, *cb, *cr); *a = color->a; }
+    COLOR_API Color* ColorFromJPEG(double y, double cb, double cr, int a) { return new Color(Color::FromJPEG(y, cb, cr, a)); }
+
+    COLOR_API Color* ColorFromLCHab(double l, double c, double h, int a) { return new Color(Color::FromLCHab(l, c, h, a)); }
+    COLOR_API void ColorToLCHab(Color* color, double* l, double* c, double* h, int* a) { color->ToLCHab(*l, *c, *h); *a = color->a; }
+
+    COLOR_API Color* ColorFromLCHuv(double l, double c, double h, int a) { return new Color(Color::FromLCHuv(l, c, h, a)); }
+    COLOR_API void ColorToLCHuv(Color* color, double* l, double* c, double* h, int* a) { color->ToLCHuv(*l, *c, *h); *a = color->a; }
+
+    COLOR_API Color* ColorFromAdobeRGB(double r, double g, double b, int a) { return new Color(Color::FromAdobeRGB(r, g, b, a)); }
+    COLOR_API void ColorToAdobeRGB(Color* color, double* r, double* g, double* b, int* a) { color->ToAdobeRGB(*r, *g, *b); *a = color->a; }
+
+    COLOR_API Color* ColorFromProPhotoRGB(double r, double g, double b, int a) { return new Color(Color::FromProPhotoRGB(r, g, b, a)); }
+    COLOR_API void ColorToProPhotoRGB(Color* color, double* r, double* g, double* b, int* a) { color->ToProPhotoRGB(*r, *g, *b); *a = color->a; }
+
+    COLOR_API Color* ColorFromLuv(double L, double u, double v, int a) { return new Color(Color::FromLuv(L, u, v, a)); }
+    COLOR_API void ColorToLuv(Color* color, double* L, double* u, double* v, int* a) { color->ToLuv(*L, *u, *v); *a = color->a; }
+
+    COLOR_API Color* ColorFromRec2020(double r, double g, double b, int a) { return new Color(Color::FromRec2020(r, g, b, a)); }
+    COLOR_API void ColorToRec2020(Color* color, double* r, double* g, double* b, int* a) { color->ToRec2020(*r, *g, *b); *a = color->a; }
+
+    COLOR_API Color* ColorFromDisplayP3(double r, double g, double b, int a) { return new Color(Color::FromDisplayP3(r, g, b, a)); }
+    COLOR_API void ColorToDisplayP3(Color* color, double* r, double* g, double* b, int* a) { color->ToDisplayP3(*r, *g, *b); *a = color->a; }
+
+    COLOR_API Color* ColorFromOKLab(double l, double a, double b, int alpha) { return new Color(Color::FromOKLab(l, a, b, alpha)); }
+    COLOR_API void ColorToOKLab(Color* color, double* l, double* a, double* b, int* t) { color->ToOKLab(*l, *a, *b); *t = color->a; }
+
+    COLOR_API Color* ColorFromOKLCH(double l, double c, double h, int alpha) { return new Color(Color::FromOKLCH(l, c, h, alpha)); }
+    COLOR_API void ColorToOKLCH(Color* color, double* l, double* c, double* h, int* a) { color->ToOKLCH(*l, *c, *h); *a = color->a; }
+
+    COLOR_API void ColorToACEScg(Color* color, double* r, double* g, double* b, int* a) { color->ToACEScg(*r, *g, *b); *a = color->a; }
+    COLOR_API Color* ColorFromACEScg(double r, double g, double b, int a) { return new Color(Color::FromACEScg(r, g, b, a)); }
+
+    COLOR_API Color* ColorFromTemp(double kelvin) { return new Color(Color::FromTemp(kelvin)); }
+    COLOR_API double ColorToTemp(Color* color) { return color->ToTemp(); }
+
+    COLOR_API double ColorToDuv(Color* color) { return color->ToDuv(); }
 
     COLOR_API Color* ColorFromNCol(const char* h, double w, double b, int a) { return new Color(Color::FromNCol(std::string(h), w, b, a)); }
     COLOR_API void ColorToNCol(Color* color, char* n, double* c, double* l, int* a)
@@ -92,101 +142,6 @@ extern "C"
         g[2] = '\0';
         strncpy(b, bStr.c_str(), 2);
         b[2] = '\0';
-    }
-
-    COLOR_API Color* ColorFromLinearSRGB(double r, double g, double b, int a) { return new Color(Color::FromLinearSRGB(r, g, b, a)); }
-    COLOR_API void ColorToLinearSRGB(Color* color, double* r, double* g, double* b, int* a)
-    {
-        color->ToLinearSRGB(*r, *g, *b);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromHSV(double h, double s, double v, int a) { return new Color(Color::FromHSV(h, s, v, a)); }
-    COLOR_API void ColorToHSV(Color* color, double* h, double* s, double* v, int* a)
-    {
-        color->ToHSV(*h, *s, *v);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromYPbPr(double y, double cb, double cr, int a) { return new Color(Color::FromYPbPr(y, cb, cr, a)); }
-    COLOR_API void ColorToYPbPr(Color* color, double* y, double* cb, double* cr, int* a)
-    {
-        color->ToYPbPr(*y, *cb, *cr);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromLCHab(double l, double c, double h, int a) { return new Color(Color::FromLCHab(l, c, h, a)); }
-    COLOR_API void ColorToLCHab(Color* color, double* l, double* c, double* h, int* a)
-    {
-        color->ToLCHab(*l, *c, *h);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromLCHuv(double l, double c, double h, int a) { return new Color(Color::FromLCHuv(l, c, h, a)); }
-    COLOR_API void ColorToLCHuv(Color* color, double* l, double* c, double* h, int* a)
-    {
-        color->ToLCHuv(*l, *c, *h);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromAdobeRGB(double r, double g, double b, int a) { return new Color(Color::FromAdobeRGB(r, g, b, a)); }
-    COLOR_API void ColorToAdobeRGB(Color* color, double* r, double* g, double* b, int* a)
-    {
-        color->ToAdobeRGB(*r, *g, *b);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromProPhotoRGB(double r, double g, double b, int a) { return new Color(Color::FromProPhotoRGB(r, g, b, a)); }
-    COLOR_API void ColorToProPhotoRGB(Color* color, double* r, double* g, double* b, int* a)
-    {
-        color->ToProPhotoRGB(*r, *g, *b);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromLuv(double L, double u, double v, int a) { return new Color(Color::FromLuv(L, u, v, a)); }
-    COLOR_API void ColorToLuv(Color* color, double* L, double* u, double* v, int* a)
-    {
-        color->ToLuv(*L, *u, *v);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromRec2020(double r, double g, double b, int a) { return new Color(Color::FromRec2020(r, g, b, a)); }
-    COLOR_API void ColorToRec2020(Color* color, double* r, double* g, double* b, int* a)
-    {
-        color->ToRec2020(*r, *g, *b);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromDisplayP3(double r, double g, double b, int a) { return new Color(Color::FromDisplayP3(r, g, b, a)); }
-    COLOR_API void ColorToDisplayP3(Color* color, double* r, double* g, double* b, int* a)
-    {
-        color->ToDisplayP3(*r, *g, *b);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromOKLab(double l, double a, double b, int alpha) { return new Color(Color::FromOKLab(l, a, b, alpha)); }
-    COLOR_API void ColorToOKLab(Color* color, double* l, double* a, double* b, int* t)
-    {
-        color->ToOKLab(*l, *a, *b);
-        *t = color->a;
-    }
-
-    COLOR_API Color* ColorFromOKLCH(double l, double c, double h, int alpha) { return new Color(Color::FromOKLCH(l, c, h, alpha)); }
-    COLOR_API void ColorToOKLCH(Color* color, double* l, double* c, double* h, int* a)
-    {
-        color->ToOKLCH(*l, *c, *h);
-        *a = color->a;
-    }
-
-    COLOR_API Color* ColorFromTemp(double kelvin) { return new Color(Color::FromTemp(kelvin)); }
-    COLOR_API double ColorToTemp(Color* color)
-    {
-        return color->ToTemp();
-    }
-
-    COLOR_API double ColorToDuv(Color* color)
-    {
-        return color->ToDuv();
     }
 
     #pragma endregion
@@ -231,7 +186,7 @@ extern "C"
 
     #pragma region Color Manipulation
     COLOR_API void InvertColor(Color* color) { color->Invert(); }
-    COLOR_API void GrayscaleColor(Color* color)  { color->Grayscale(); }
+    COLOR_API void GrayscaleColor(Color* color, double factor)  { color->Grayscale(factor); }
     COLOR_API void SepiaColor(Color* color, double factor) { color->Sepia(factor); }
     COLOR_API void CrossProcessColor(Color* color, double factor) { color->CrossProcess(factor); }
     COLOR_API void MoonlightColor(Color* color, double factor) { color->Moonlight(factor); }
@@ -240,14 +195,18 @@ extern "C"
     COLOR_API void PolaroidColor(Color* color, double factor) { color->Polaroid(factor); }
     COLOR_API void ComplementColor(Color* color) { color->Complement(); }
 
-    COLOR_API void ShiftHueColor(Color* color, double degrees)       { color->ShiftHue(degrees); }
+    COLOR_API void ShiftHueColor(Color* color, double degrees)       { color->ShiftHue(degrees);       }
     COLOR_API void ShiftSaturationColor(Color* color, double amount) { color->ShiftSaturation(amount); }
-    COLOR_API void ShiftLightnessColor(Color* color, double amount)  { color->ShiftLightness(amount); }
-    COLOR_API void ShiftValueColor(Color* color, double amount)      { color->ShiftValue(amount); }
-    COLOR_API void ShiftIntensityColor(Color* color, double amount)  { color->ShiftIntensity(amount); }
+    COLOR_API void ShiftLightnessColor(Color* color, double amount)  { color->ShiftLightness(amount);  }
+    COLOR_API void ShiftValueColor(Color* color, double amount)      { color->ShiftValue(amount);      }
+    COLOR_API void ShiftIntensityColor(Color* color, double amount)  { color->ShiftIntensity(amount);  }
+    COLOR_API void ShiftPerceptionColor(Color* color, double amount) { color->ShiftPerception(amount); }
+    COLOR_API void ShiftChromaColor(Color* color, double amount)     { color->ShiftChroma(amount);     }
+    COLOR_API void ShiftLumaColor(Color* color, double amount)       { color->ShiftLuma(amount);       }
+    COLOR_API void ShiftGrayColor(Color* color, double amount)       { color->ShiftGray(amount);       }
     COLOR_API void ShiftWhiteLevelColor(Color* color, double amount) { color->ShiftWhiteLevel(amount); }
     COLOR_API void ShiftBlackLevelColor(Color* color, double amount) { color->ShiftBlackLevel(amount); }
-    COLOR_API void ShiftContrastColor(Color* color, double amount)   { color->ShiftContrast(amount); }
+    COLOR_API void ShiftContrastColor(Color* color, double amount)   { color->ShiftContrast(amount);   }
 
     COLOR_API Color* ColorMix(Color* color1, Color* color2, double amount) { return new Color(Color::Mix(*color1, *color2, amount)); }
     COLOR_API Color* ColorScreen(Color* color1, Color* color2) { return new Color(Color::Screen(*color1, *color2)); }

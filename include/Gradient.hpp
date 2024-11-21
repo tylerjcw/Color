@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Color.hpp"
-#include "ColorBuffer.hpp"
+#include "Canvas.hpp"
 
 #include <vector>
 #include <cmath>
@@ -25,14 +25,18 @@ namespace KTLib
     class Gradient
     {
         public:
-            Gradient() : m_totalSteps(2), m_type(KTLib::GradientType::Linear) {}
+            Gradient() : m_totalSteps(2), m_type(KTLib::GradientType::Linear), m_colorStops{ColorStop(0.0f, Color::Black()), ColorStop(1.0f, Color::White())} {}
             Gradient(int totalSteps);
             Gradient(const Gradient& other) : m_totalSteps(other.m_totalSteps), m_type(other.m_type), m_colorStops(other.m_colorStops) {}
             Gradient(int totalSteps, const std::vector<unsigned int>& colors);
+            Gradient(int totalSteps, const std::vector<ColorStop>& stops);
+
 
             // Assignment operator
-            Gradient& operator=(const Gradient& other) {
-                if (this != &other) {
+            Gradient& operator=(const Gradient& other)
+            {
+                if (this != &other)
+                {
                     m_totalSteps = other.m_totalSteps;
                     m_type = other.m_type;
                     m_colorStops = other.m_colorStops;
@@ -52,8 +56,11 @@ namespace KTLib
             void Complement();
             void AddColorStop(const Color& color, float position);
             float CalculatePosition(float x, float y, float centerX, float centerY, float maxRadius) const;
-            void RemoveColorStop(float position);
+            void RemoveColorStopAt(int index);
             const std::vector<ColorStop>& GetColorStops() const { return m_colorStops; }
+            ColorStop GetColorStopAt(int index) { return m_colorStops[index]; }
+            void UpdateColorStop(int index, const ColorStop& colorStop);
+            size_t GetColorStopCount() const { return m_colorStops.size(); }
             Color GetColorAt(float position) const;
             Color GetColorAtStep(int step) const;
             void Rotate(float angle);

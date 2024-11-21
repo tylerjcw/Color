@@ -16,7 +16,7 @@ namespace KTLib
         public:
             Showcase(Color* color, const char* title);
             Showcase(Gradient* gradient, const char* title);
-            Showcase(ColorBuffer* buffer, const char* title);
+            Showcase(Canvas* buffer, const char* title);
             ~Showcase();
 
             int Show();
@@ -26,7 +26,7 @@ namespace KTLib
             std::string m_title;
             Color* m_color;
             Gradient* m_gradient;
-            ColorBuffer* m_buffer;
+            Canvas* m_buffer;
             bool m_isColor;
             bool m_isGradient;
             HFONT m_hFont;
@@ -42,7 +42,7 @@ namespace KTLib
             void DrawPreview(HDC hdc);
             void DrawColorInfo(HDC hdc);
             void DrawGradientInfo(HDC hdc);
-            void DrawColorBufferInfo(HDC hdc);
+            void DrawCanvasInfo(HDC hdc);
             std::wstring ToWString(const std::string& str) { return std::wstring(str.begin(), str.end()); }
     };
 }

@@ -186,12 +186,26 @@ extern "C"
     COLOR_API Color* ColorFromHWB(double h, double w, double b, double a);
     COLOR_API void ColorToHSP(Color* color, double* h, double* s, double* p, int* a);
     COLOR_API Color* ColorFromHSP(double h, double s, double p, int a);
+    COLOR_API void ColorToHCY(Color* color, double* h, double* c, double* y, int* a);
+    COLOR_API Color* ColorFromHCY(double h, double c, double y, int a);
+    COLOR_API void ColorToHCG(Color* color, double* h, double* c, double* g, int* a);
+    COLOR_API Color* ColorFromHCG(double h, double c, double g, int a);
+    COLOR_API void ColorToTSL(Color* color, double* t, double* s, double* l, int* a);
+    COLOR_API Color* ColorFromTSL(double t, double s, double l, int a);
+    COLOR_API void ColorToCMY(Color* color, double* c, double* m, double* y, int* a);
+    COLOR_API Color* ColorFromCMY(double c, double m, double y, int a);
     COLOR_API void ColorToCMYK(Color* color, double* c, double* m, double* y, double* k, int* a);
     COLOR_API Color* ColorFromCMYK(double c, double m, double y, double k, double a);
     COLOR_API void ColorToXYZ_D50(Color* color, double* x, double* y, double* z, int* a);
     COLOR_API Color* ColorFromXYZ_D50(double x, double y, double z, double a);
     COLOR_API void ColorToXYZ_D65(Color* color, double* x, double* y, double* z, int* a);
     COLOR_API Color* ColorFromXYZ_D65(double x, double y, double z, double a);
+    COLOR_API void ColorToUCS(Color* color, double* u, double* v, double* w, int* a);
+    COLOR_API Color* ColorFromUCS(double u, double v, double w, int a);
+    COLOR_API void ColorToUVW(Color* color, double* u, double* v, double* w, int* a);
+    COLOR_API Color* ColorFromUVW(double u, double v, double w, int a);
+    COLOR_API void ColorToXYY(Color* color, double* x, double* y, double* Y, int* a);
+    COLOR_API Color* ColorFromXYY(double x, double y, double Y, int a);
     COLOR_API void ColorToLab(Color* color, double* l, double* a, double* b, int* t);
     COLOR_API Color* ColorFromLab(double l, double a, double b, double alpha);
     COLOR_API void ColorToLuv(Color* color, double* L, double* u, double* v, int* a);
@@ -200,6 +214,20 @@ extern "C"
     COLOR_API Color* ColorFromYIQ(double y, double i, double q, double a);
     COLOR_API void ColorToYPbPr(Color* color, double* y, double* pb, double* pr, int* a);
     COLOR_API Color* ColorFromYPbPr(double y, double pb, double pr, int a);
+    COLOR_API void ColorToYCbCr(Color* color, double* y, double* cb, double* cr, int* a, int type);
+    COLOR_API Color* ColorFromYCbCr(double y, double cb, double cr, int a, int type);
+    COLOR_API void ColorToYcCbcCrc(Color* color, double* y, double* cb, double* cr, int* a);
+    COLOR_API Color* ColorFromYcCbcCrc(double y, double cb, double cr, int a);
+    COLOR_API void ColorToYCgCo(Color* color, double* y, double* cg, double* co, int* a);
+    COLOR_API Color* ColorFromYCgCo(double y, double cg, double co, int a);
+    COLOR_API void ColorToYDbDr(Color* color, double* y, double* db, double* dr, int* a);
+    COLOR_API Color* ColorFromYDbDr(double y, double db, double dr, int a);
+    COLOR_API void ColorToYUV(Color* color, double* y, double* u, double* v, int* a);
+    COLOR_API Color* ColorFromYUV(double y, double u, double v, int a);
+    COLOR_API void ColorToYES(Color* color, double* y, double* e, double* s, int* a);
+    COLOR_API Color* ColorFromYES(double y, double e, double s, int a);
+    COLOR_API void ColorToJPEG(Color* color, double* y, double* cb, double* cr, int* a);
+    COLOR_API Color* ColorFromJPEG(double y, double cb, double cr, int a);
     COLOR_API void ColorToLCHab(Color* color, double* l, double* c, double* h, int* a);
     COLOR_API Color* ColorFromLCHab(double l, double c, double h, int a);
     COLOR_API void ColorToLCHuv(Color* color, double* l, double* c, double* h, int* a);
@@ -212,11 +240,13 @@ extern "C"
     COLOR_API Color* ColorFromOKLab(double l, double a, double b, int alpha);
     COLOR_API void ColorToOKLCH(Color* color, double* l, double* c, double* h, int* a);
     COLOR_API Color* ColorFromOKLCH(double l, double c, double h, int alpha);
+    COLOR_API void ColorToACEScg(Color* color, double* r, double* g, double* b, int* a);
+    COLOR_API Color* ColorFromACEScg(double r, double g, double b, int a);
     #pragma endregion
 
     #pragma region Color manipulation
     COLOR_API void InvertColor(Color* color);
-    COLOR_API void GrayscaleColor(Color* color);
+    COLOR_API void GrayscaleColor(Color* color, double factor);
     COLOR_API void SepiaColor(Color* color, double factor);
     COLOR_API void CrossProcessColor(Color* color, double factor);
     COLOR_API void MoonlightColor(Color* color, double factor);
@@ -232,6 +262,10 @@ extern "C"
     COLOR_API void ShiftLightnessColor(Color* color, double amount);
     COLOR_API void ShiftValueColor(Color* color, double amount);
     COLOR_API void ShiftIntensityColor(Color* color, double amount);
+    COLOR_API void ShiftPerceptionColor(Color* color, double amount);
+    COLOR_API void ShiftChromaColor(Color* color, double amount);
+    COLOR_API void ShiftLumaColor(Color* color, double amount);
+    COLOR_API void ShiftGrayColor(Color* color, double amount);
     COLOR_API void ShiftWhiteLevelColor(Color* color, double amount);
     COLOR_API void ShiftBlackLevelColor(Color* color, double amount);
     COLOR_API void ShiftContrastColor(Color* color, double amount);

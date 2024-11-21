@@ -74,7 +74,7 @@ class Color
     A
     {
         get => DllCall("Color\GetColorAlpha", "Ptr", this.Ptr, "Int")
-        set => DllCall("Color\SetColorAlpha", "Ptr", this.Ptr, "Int", value)
+        set => (DllCall("Color\SetColorAlpha", "Ptr", this.Ptr, "Int", value), this)
     }
 
     /**
@@ -126,7 +126,7 @@ class Color
     FormatString
     {
         get => StrGet(DllCall("Color\GetColorFormatString", "Ptr", this.Ptr, "Ptr"), "UTF-8")
-        set => DllCall("Color\SetColorFormatString", "Ptr", this.Ptr, "Str", value)
+        set => DllCall("Color\SetColorFormatString", "Ptr", this.Ptr, "AStr", value)
     }
 
     /**
@@ -138,7 +138,7 @@ class Color
     TypeString
     {
         get => StrGet(DllCall("Color\GetColorTypeString", "Ptr", this.Ptr, "Ptr"), "UTF-8")
-        set => DllCall("Color\SetColorTypeString", "Ptr", this.Ptr, "Str", value)
+        set => DllCall("Color\SetColorTypeString", "Ptr", this.Ptr, "AStr", value)
     }
 
     /**
@@ -184,9 +184,12 @@ class Color
      * @example <caption>Converting a Color to a YPbPr String, with each channel rounded to 3 decimal places. Note that Formatters are case-insensitive.</caption>
      * col.ToString("YPbPr", "Y: {y:3}`nPb: {Pb:3}`nPr: {pR:3}")
      */
-    ToString(type, format := this.FormatString)
+    ToString(type := "", format := "")
     {
-        if format == ""
+        if not type
+            type := this.TypeString
+
+        if not format
         {
             switch StrLower(type)
             {
@@ -197,14 +200,28 @@ class Color
                 case "hsi":         format := Color.DefaultFormatString.HSI
                 case "hwb":         format := Color.DefaultFormatString.HWB
                 case "hsp":         format := Color.DefaultFormatString.HSP
+                case "hcy":         format := Color.DefaultFormatString.HCY
+                case "hcg":         format := Color.DefaultFormatString.HCG
+                case "tsl":         format := Color.DefaultFormatString.TSL
                 case "xyz_d50":     format := Color.DefaultFormatString.XYZ_D50
                 case "xyz_d65":     format := Color.DefaultFormatString.XYZ_D65
+                case "ucs":         format := Color.DefaultFormatString.UCS
+                case "uvw":         format := Color.DefaultFormatString.UVW
+                case "xyy":         format := Color.DefaultFormatString.XYY
                 case "lab":         format := Color.DefaultFormatString.Lab
-                case "yiq":         format := Color.DefaultFormatString.YIQ
                 case "ncol":        format := Color.DefaultFormatString.NCol
+                case "cmy":         format := Color.DefaultFormatString.CMY
                 case "cmyk":        format := Color.DefaultFormatString.CMYK
                 case "hsv":         format := Color.DefaultFormatString.HSV
                 case "ypbpr":       format := Color.DefaultFormatString.YPbPr
+                case "ycbcr":       format := Color.DefaultFormatString.YCbCr
+                case "ycgco":       format := Color.DefaultFormatString.YCgCo
+                case "yccbccrc":    format := Color.DefaultFormatString.YcCbcCrc
+                case "ydbdr":       format := Color.DefaultFormatString.YDbDr
+                case "yuv":         format := Color.DefaultFormatString.YUV
+                case "yes":         format := Color.DefaultFormatString.YES
+                case "jpeg":        format := Color.DefaultFormatString.JPEG
+                case "yiq":         format := Color.DefaultFormatString.YIQ
                 case "lchab":       format := Color.DefaultFormatString.LCHab
                 case "lchuv":       format := Color.DefaultFormatString.LCHuv
                 case "adobergb":    format := Color.DefaultFormatString.AdobeRGB
@@ -214,6 +231,8 @@ class Color
                 case "displayp3":   format := Color.DefaultFormatString.DisplayP3
                 case "oklch":       format := Color.DefaultFormatString.OKLCH
                 case "oklab":       format := Color.DefaultFormatString.OKLab
+                case "acescg":      format := Color.DefaultFormatString.ACEScg
+                default: throw Error("Unknown type")
             }
         }
 
@@ -257,7 +276,7 @@ class Color
      * @param {Color} other - The color to compare with.
      * @returns {boolean}
      */
-    IsEqual(other) => this.ToInt() == other.ToInt()
+    IsEqual(other) => (this.ToInt() == other.ToInt())
 
     /**
      * Creates a random color.
@@ -783,6 +802,28 @@ class Color
     static FromHSP(h, s, p, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHSP" , "Double", h, "Double", s, "Double", p, "Double", a, "Ptr"))
 
     /**
+     * Creates a Color object from HCY values.
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} c - The chroma value `(0 to 100)`.
+     * @param {number} y - The luma value `(0 to 255)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
+     * @returns {Color}
+     */
+    static FromHCY(h, c, y, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHCY" , "Double", h, "Double", c, "Double", y, "Double", a, "Ptr"))
+
+    /**
+     * Creates a Color object from HCG values.
+     * @param {number} h - The hue value `(0 to 360)`.
+     * @param {number} c - The chroma value `(0 to 100)`.
+     * @param {number} g - The gray value `(0 to 100)`.
+     * @param {number} [a=255] - The alpha value `(0 to 255)`.
+     * @returns {Color}
+     */
+    static FromHCG(h, c, g, a := 255) => Color.FromPtr(DllCall("Color\ColorFromHCG" , "Double", h, "Double", c, "Double", g, "Double", a, "Ptr"))
+
+    static FromTSL(t, s, l, a := 255) => Color.FromPtr(DllCall("Color\ColorFromTSL", "Double", t, "Double", s, "Double", l, "Int", a, "Ptr"))
+
+    /**
      * Creates a Color object from XYZ D50 values.
      * @param {number} x - The X value `(0 to 1)`.
      * @param {number} y - The Y value `(0 to 1)`.
@@ -801,6 +842,28 @@ class Color
      * @returns {Color}
      */
     static FromXYZ_D65(x, y, z, a := 255) => Color.FromPtr(DllCall("Color\ColorFromXYZ_D65" , "Double", x, "Double", y, "Double", z, "Double", a, "Ptr"))
+
+    /**
+     * Creates a new Color from UCS values.
+     * @param {number} u - The U component
+     * @param {number} v - The V component
+     * @param {number} w - The W component
+     * @param {number} [a=255] - The alpha component
+     * @returns {Color}
+     */
+    static FromUCS(u, c, s, a := 255) => Color.FromPtr(DllCall("Color\ColorFromUCS", "Double", u, "Double", c, "Double", s, "Int", a, "Ptr"))
+
+    /**
+     * Creates a new Color from UVW values.
+     * @param {number} u - The U component `(-134 to 224)`
+     * @param {number} v - The V component `(-140 to 122)`
+     * @param {number} w - The W component `(0 to 100)`
+     * @param {number} [a=255] - The alpha component
+     * @returns {Color}
+     */
+    static FromUVW(u, v, w, a := 255) => Color.FromPtr(DllCall("Color\ColorFromUVW", "Double", u, "Double", v, "Double", w, "Int", a, "Ptr"))
+
+    static FromXYY(x, y, y_, a := 255) => Color.FromPtr(DllCall("Color\ColorFromXYY", "Double", x, "Double", y, "Double", y_, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from CIE Lab values.
@@ -852,6 +915,20 @@ class Color
      */
     static FromYPbPr(y, cb, cr, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYPbPr", "Double", y, "Double", cb, "Double", cr, "Double", a, "Ptr"))
 
+    static FromYCbCr(y, cb, cr, a := 255, yCbCrType := Color.YCbCrType.BT709) => Color.FromPtr(DllCall("Color\ColorFromYCbCr", "Double", y, "Double", cb, "Double", cr, "Int", a, "Int", yCbCrType, "Ptr"))
+
+    static FromYCgCo(y, cg, co, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYCgCo", "Double", y, "Double", cg, "Double", co, "Int", a, "Ptr"))
+
+    static FromYcCbcCrc(y, cb, cr, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYcCbcCrc", "Double", y, "Double", cb, "Double", cr, "Int", a, "Ptr"))
+
+    static FromYDbDr(y, db, dr, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYDbDr", "Double", y, "Double", db, "Double", dr, "Int", a, "Ptr"))
+
+    static FromYUV(y, u, v, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYUV", "Double", y, "Double", u, "Double", v, "Int", a, "Ptr"))
+
+    static FromYES(y, e, s, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYES", "Double", y, "Double", e, "Double", s, "Int", a, "Ptr"))
+
+    static FromJPEG(y, cb, cr, a := 255) => Color.FromPtr(DllCall("Color\ColorFromJPEG", "Double", y, "Double", cb, "Double", cr, "Int", a, "Ptr"))
+
     /**
      * Creates a Color object from YIQ values.
      * @param {number} y - The Y value `(0 to 1).
@@ -861,6 +938,8 @@ class Color
      * @returns {Color}
      */
     static FromYIQ(y, i, q, a := 255) => Color.FromPtr(DllCall("Color\ColorFromYIQ" , "Double", y, "Double", i, "Double", q, "Double", a, "Ptr"))
+
+    static FromCMY(c, m, y, a := 255) => Color.FromPtr(DllCall("Color\ColorFromCMY", "Double", c, "Double", m, "Double", y, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from CMYK values.
@@ -879,7 +958,6 @@ class Color
      * @returns {Color}
      */
     static FromTemp(kelvin) => Color.FromPtr(DllCall("Color\ColorFromTemp", "Double", kelvin, "Ptr"))
-    ToTemp() => DllCall("Color\ColorToTemp", "Ptr", this.Ptr, "Double")
 
     /**
      * Creates a Color object from Linear sRGB values.
@@ -902,12 +980,6 @@ class Color
     static FromProPhotoRGB(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromProPhotoRGB", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
-     * Converts the color to Rec.2020 format.
-     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
-     */
-    ToRec2020() => (DllCall("Color\ColorToRec2020", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
-
-    /**
      * Creates a Color object from Rec.2020 values.
      * @param {number} r - The red value `(0 to 1)`.
      * @param {number} g - The green value `(0 to 1)`.
@@ -916,12 +988,6 @@ class Color
      * @returns {Color}
      */
     static FromRec2020(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromRec2020", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
-
-    /**
-     * Converts the color to Display-P3 format.
-     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
-     */
-    ToDisplayP3() => (DllCall("Color\ColorToDisplayP3", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Creates a Color object from Display-P3 values.
@@ -934,12 +1000,6 @@ class Color
     static FromDisplayP3(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromDisplayP3", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
-     * Converts the color to OKLab format.
-     * @returns {Object} An object containing L, a, b, and A values.
-     */
-    ToOKLab() => (DllCall("Color\ColorToOKLab", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", a := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", t := Buffer(4, 0)), {L: NumGet(l, "Double"), a: NumGet(a, "Double"), b: NumGet(b, "Double"), T: NumGet(t, "Int")})
-
-    /**
      * Creates a Color object from OKLab values.
      * @param {number} l - The lightness value `(0 to 1)`.
      * @param {number} a - The green-red value `(-0.4 to 0.4)`.
@@ -950,12 +1010,6 @@ class Color
     static FromOKLab(l, a, b, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLab", "Double", l, "Double", a, "Double", b, "Int", alpha, "Ptr"))
 
     /**
-     * Converts the color to OKLCH format.
-     * @returns {Object} An object containing L, C, H, and A values.
-     */
-    ToOKLCH() => (DllCall("Color\ColorToOKLCH", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", c := Buffer(8, 0), "Ptr", h := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {L: NumGet(l, "Double"), C: NumGet(c, "Double"), H: NumGet(h, "Double"), A: NumGet(a, "Int")})
-
-    /**
      * Creates a Color object from OKLCH values.
      * @param {number} l - The lightness value `(0 to 1)`.
      * @param {number} c - The chroma value `(0 to 0.4)`.
@@ -964,6 +1018,16 @@ class Color
      * @returns {Color}
      */
     static FromOKLCH(l, c, h, alpha := 255) => Color.FromPtr(DllCall("Color\ColorFromOKLCH", "Double", l, "Double", c, "Double", h, "Int", alpha, "Ptr"))
+
+    /**
+     * Creates a new Color from ACEScg values.
+     * @param {number} r - The red component
+     * @param {number} g - The green component
+     * @param {number} b - The blue component
+     * @param {number} [a=255] - The alpha component
+     * @returns {Color}
+     */
+    static FromACEScg(r, g, b, a := 255) => Color.FromPtr(DllCall("Color\ColorFromACEScg", "Double", r, "Double", g, "Double", b, "Int", a, "Ptr"))
 
     /**
      * Creates a Color object from NCol values.
@@ -1026,43 +1090,43 @@ class Color
      * Converts the color to grayscale.
      * @returns {Color}
      */
-    Grayscale() => (DllCall("Color\GrayscaleColor", "Ptr", this.Ptr), this)
+    Grayscale(factor := 1) => (DllCall("Color\GrayscaleColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a sepia tone to the color.
      * @returns {Color}
      */
-    Sepia(factor) => (DllCall("Color\SepiaColor", "Ptr", this.Ptr, "Double", factor), this)
+    Sepia(factor := 1) => (DllCall("Color\SepiaColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a cross process matrix to the color.
      * @returns {Color}
      */
-    CrossProcess(factor) => (DllCall("Color\CrossProcessColor", "Ptr", this.Ptr, "Double", factor), this)
+    CrossProcess(factor := 1) => (DllCall("Color\CrossProcessColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a moonlight matrix to the color.
      * @returns {Color}
      */
-    Moonlight(factor) => (DllCall("Color\MoonlightColor", "Ptr", this.Ptr, "Double", factor), this)
+    Moonlight(factor := 1) => (DllCall("Color\MoonlightColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a vintage film matrix to the color.
      * @returns {Color}
      */
-    VintageFilm(factor) => (DllCall("Color\VintageFilmColor", "Ptr", this.Ptr, "Double", factor), this)
+    VintageFilm(factor := 1) => (DllCall("Color\VintageFilmColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a technicolor matrix to the color.
      * @returns {Color}
      */
-    Technicolor(factor) => (DllCall("Color\TechnicolorColor", "Ptr", this.Ptr, "Double", factor), this)
+    Technicolor(factor := 1) => (DllCall("Color\TechnicolorColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Applies a Polaroid matrix to the color.
      * @returns {Color}
      */
-    Polaroid(factor) => (DllCall("Color\PolaroidColor", "Ptr", this.Ptr, "Double", factor), this)
+    Polaroid(factor := 1) => (DllCall("Color\PolaroidColor", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Shifts the hue of the color by the specified number of degrees.
@@ -1085,12 +1149,24 @@ class Color
      */
     ShiftLightness(amount) => (DllCall("Color\ShiftLightnessColor", "Ptr", this.Ptr, "Double", amount), this)
 
+    ShiftValue(amount) => (DllCall("Color\ShiftValueColor", "Ptr", this.Ptr, "Double", amount), this)
+
+    ShiftIntensity(amount) => (DllCall("Color\ShiftIntensityColor", "Ptr", this.Ptr, "Double", amount), this)
+
+    ShiftPerception(amount) => (DllCall("Color\ShiftPerceptionColor", "Ptr", this.Ptr, "Double", amount), this)
+
+    ShiftChroma(amount) => (DllCall("Color\ShiftChromaColor", "Ptr", this.Ptr, "Double", amount), this)
+
+    ShiftLuma(amount) => (DllCall("Color\ShiftLumaColor", "Ptr", this.Ptr, "Double", amount), this)
+
+    ShiftGray(amount) => (DllCall("Color\ShiftGrayColor", "Ptr", this.Ptr, "Double", amount), this)
+
     /**
      * Shifts the whiteness of the color by the specified amount.
      * @param {number} amount - The amount to shift the whiteness.
      * @returns {Color}
      */
-    ShiftWhiteness(amount) => (DllCall("Color\ShiftWhiteLevelColor", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftWhiteLevel(amount) => (DllCall("Color\ShiftWhiteLevelColor", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Shifts the blac level of the color by the specified amount.
@@ -1199,28 +1275,56 @@ class Color
     ToHWB() => (DllCall("Color\ColorToHWB"    , "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", w := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), W: NumGet(w, "Double"), B: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
     /**
-     * Converts the color to HWB format.
+     * Converts the color to HSP format.
      * @returns {Object} An object containing H (0 to 360), S (0 to 100), P (0 to 255), and A (0 to 255) values.
      */
     ToHSP() => (DllCall("Color\ColorToHSP", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", s := Buffer(8, 0), "Ptr", p := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), S: NumGet(s, "Double"), P: NumGet(p, "Double"), A: NumGet(a, "Int")})
 
     /**
+     * Converts the color to HCY format.
+     * @returns {Object} An object containing H (0 to 360), C (0 to 100), Y (0 to 255), and A (0 to 255) values.
+     */
+    ToHCY() => (DllCall("Color\ColorToHCY", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", c := Buffer(8, 0), "Ptr", y := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), C: NumGet(c, "Double"), Y: NumGet(y, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to HCG format.
+     * @returns {Object} An object containing H (0 to 360), C (0 to 100), G (0 to 100), and A (0 to 255) values.
+     */
+    ToHCG() => (DllCall("Color\ColorToHCG", "Ptr", this.Ptr, "Ptr", h := Buffer(8, 0)  , "Ptr", c := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: NumGet(h, "Double"), C: NumGet(c, "Double"), G: NumGet(g, "Double"), A: NumGet(a, "Int")})
+
+    ToTSL() => (DllCall("Color\ColorToTSL", "Ptr", this.Ptr, "Ptr", t := Buffer(8, 0), "Ptr", s := Buffer(8, 0), "Ptr", l := Buffer(8, 0), "Ptr", a := Buffer(4, 0), "Cdecl"), {T: NumGet(t, "Double"), S: NumGet(s, "Double"), L: NumGet(l, "Double"), A: NumGet(a, "Int")})
+
+    /**
      * Converts the color to XYZ D50 format.
      * @returns {Object} An object containing X, Y, Z, and A values.
      */
-    ToXYZ_D50() => (DllCall("Color\ColorToXYZ_D50"    , "Ptr", this.Ptr, "Ptr", x := Buffer(8, 0)  , "Ptr", y := Buffer(8, 0), "Ptr", z := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {X: NumGet(x, "Double"), Y: NumGet(y, "Double"), Z: NumGet(z, "Double")      , A: NumGet(a, "Int")})
+    ToXYZ_D50() => (DllCall("Color\ColorToXYZ_D50", "Ptr", this.Ptr, "Ptr", x := Buffer(8, 0)  , "Ptr", y := Buffer(8, 0), "Ptr", z := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {X: NumGet(x, "Double"), Y: NumGet(y, "Double"), Z: NumGet(z, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to XYZ D65 format.
      * @returns {Object} An object containing X, Y, Z, and A values.
      */
-    ToXYZ_D65() => (DllCall("Color\ColorToXYZ_D65"    , "Ptr", this.Ptr, "Ptr", x := Buffer(8, 0)  , "Ptr", y := Buffer(8, 0), "Ptr", z := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {X: NumGet(x, "Double"), Y: NumGet(y, "Double"), Z: NumGet(z, "Double")      , A: NumGet(a, "Int")})
+    ToXYZ_D65() => (DllCall("Color\ColorToXYZ_D65", "Ptr", this.Ptr, "Ptr", x := Buffer(8, 0)  , "Ptr", y := Buffer(8, 0), "Ptr", z := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {X: NumGet(x, "Double"), Y: NumGet(y, "Double"), Z: NumGet(z, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to UCS color space.
+     * @returns {Object} Object containing U, V, W, A values
+     */
+    ToUCS() => (DllCall("Color\ColorToUCS", "Ptr", this.Ptr, "Ptr", u := Buffer(8, 0), "Ptr", c := Buffer(8, 0), "Ptr", s := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {U: NumGet(u, "Double"), C: NumGet(c, "Double"), S: NumGet(s, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to UVW color space.
+     * @returns {Object} Object containing U, V, W, A values
+     */
+    ToUVW() => (DllCall("Color\ColorToUVW", "Ptr", this.Ptr, "Ptr", u := Buffer(8, 0), "Ptr", v := Buffer(8, 0), "Ptr", w := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {U: NumGet(u, "Double"), V: NumGet(v, "Double"), W: NumGet(w, "Double"), A: NumGet(a, "Int")})
+
+    ToXYY() => (DllCall("Color\ColorToXYY", "Ptr", this.Ptr, "Ptr", x := Buffer(8, 0)  , "Ptr", y := Buffer(8, 0), "Ptr", y_ := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {X: NumGet(x, "Double"), Y: NumGet(y, "Double"), Y_: NumGet(y_, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Converts the color to CIELab format.
      * @returns {Object} An object containing L, A, B, and T (alpha) values.
      */
-    ToLab() => (DllCall("Color\ColorToLab"    , "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0)  , "Ptr", a := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", t := Buffer(4, 0)), {L: NumGet(l, "Double"), A: NumGet(a, "Double"), B: NumGet(b, "Double")      , T: NumGet(t, "Int")})
+    ToLab() => (DllCall("Color\ColorToLab", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0)  , "Ptr", a := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", t := Buffer(4, 0)), {L: NumGet(l, "Double"), A: NumGet(a, "Double"), B: NumGet(b, "Double"), T: NumGet(t, "Int")})
 
     /**
      * Converts the color to LCHuv format.
@@ -1246,6 +1350,20 @@ class Color
      */
     ToYPbPr() => (DllCall("Color\ColorToYPbPr", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", cb := Buffer(8, 0), "Ptr", cr := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), Cb: NumGet(cb, "Double"), Cr: NumGet(cr, "Double"), A: NumGet(a, "Int")})
 
+    ToYCbCr(yCbCrType := Color.YCbCrType.BT709) => (DllCall("Color\ColorToYCbCr", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", cb := Buffer(8, 0), "Ptr", cr := Buffer(8, 0), "Ptr", a := Buffer(4, 0), "Int", yCbCrType, "Cdecl"), {Y: NumGet(y, "Double"), Cb: NumGet(cb, "Double"), Cr: NumGet(cr, "Double"), A: NumGet(a, "Int")})
+
+    ToYCgCo() => (DllCall("Color\ColorToYCgCo", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", cg := Buffer(8, 0), "Ptr", co := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), Cg: NumGet(cg, "Double"), Co: NumGet(co, "Double"), A: NumGet(a, "Int")})
+
+    ToYcCbcCrc() => (DllCall("Color\ColorToYcCbcCrc", "Ptr", this.Ptr, "Ptr", yc := Buffer(8, 0), "Ptr", cbc := Buffer(8, 0), "Ptr", crc := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Yc: NumGet(yc, "Double"), Cbc: NumGet(cbc, "Double"), Crc: NumGet(crc, "Double"), A: NumGet(a, "Int")})
+
+    ToYDbDr() => (DllCall("Color\ColorToYDbDr", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", db := Buffer(8, 0), "Ptr", dr := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), Db: NumGet(db, "Double"), Dr: NumGet(dr, "Double"), A: NumGet(a, "Int")})
+
+    ToYUV() => (DllCall("Color\ColorToYUV", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", u := Buffer(8, 0), "Ptr", v := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), U: NumGet(u, "Double"), V: NumGet(v, "Double"), A: NumGet(a, "Int")})
+
+    ToYES() => (DllCall("Color\ColorToYES", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", e := Buffer(8, 0), "Ptr", s := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), E: NumGet(e, "Double"), S: NumGet(s, "Double"), A: NumGet(a, "Int")})
+
+    ToJPEG() => (DllCall("Color\ColorToJPEG", "Ptr", this.Ptr, "Ptr", y := Buffer(8, 0), "Ptr", cb := Buffer(8, 0), "Ptr", cr := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {Y: NumGet(y, "Double"), Cb: NumGet(cb, "Double"), Cr: NumGet(cr, "Double"), A: NumGet(a, "Int")})
+
     /**
      * Converts the color to YIQ format.
      * @returns {Object} An object containing Y, I, Q, and A values.
@@ -1258,6 +1376,8 @@ class Color
      */
     ToNCol() => (DllCall("Color\ColorToNCol"   , "Ptr", this.Ptr, "Ptr", h := Buffer(16, 0) , "Ptr", w := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {H: StrGet(h, "UTF-8") , W: NumGet(w, "Double"), B: 100 - NumGet(b, "Double"), A: NumGet(a, "Int")})
 
+    ToCMY() => (DllCall("Color\ColorToCMY", "Ptr", this.Ptr, "Ptr", c := Buffer(8, 0), "Ptr", m := Buffer(8, 0), "Ptr", y := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {C: NumGet(c, "Double"), M: NumGet(m, "Double"), Y: NumGet(y, "Double"), A: NumGet(a, "Int")})
+
     /**
      * Converts the color to CMYK format.
      * @returns {Object} An object containing C, M, Y, K, and A values.
@@ -1269,6 +1389,42 @@ class Color
      * @returns {Float}
      */
     ToDuv() => DllCall("Color\ColorToDuv", "Ptr", this.Ptr, "Double")
+
+    /**
+     * Converts the Color to Temperature (°K) representation.
+     * @returns {Float}
+     */
+    ToTemp() => DllCall("Color\ColorToTemp", "Ptr", this.Ptr, "Double")
+
+    /**
+     * Converts the color to Rec.2020 format.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
+     */
+    ToRec2020() => (DllCall("Color\ColorToRec2020", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to Display-P3 format.
+     * @returns {Object} An object containing r, g, b (0 to 1), and A (0 to 255) values.
+     */
+    ToDisplayP3() => (DllCall("Color\ColorToDisplayP3", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {r: NumGet(r, "Double"), g: NumGet(g, "Double"), b: NumGet(b, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to OKLab format.
+     * @returns {Object} An object containing L, a, b, and A values.
+     */
+    ToOKLab() => (DllCall("Color\ColorToOKLab", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", a := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", t := Buffer(4, 0)), {L: NumGet(l, "Double"), a: NumGet(a, "Double"), b: NumGet(b, "Double"), T: NumGet(t, "Int")})
+
+    /**
+     * Converts the color to OKLCH format.
+     * @returns {Object} An object containing L, C, H, and A values.
+     */
+    ToOKLCH() => (DllCall("Color\ColorToOKLCH", "Ptr", this.Ptr, "Ptr", l := Buffer(8, 0), "Ptr", c := Buffer(8, 0), "Ptr", h := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {L: NumGet(l, "Double"), C: NumGet(c, "Double"), H: NumGet(h, "Double"), A: NumGet(a, "Int")})
+
+    /**
+     * Converts the color to ACEScg color space.
+     * @returns {Object} Object containing R, G, B, A values
+     */
+    ToACEScg() => (DllCall("Color\ColorToACEScg", "Ptr", this.Ptr, "Ptr", r := Buffer(8, 0), "Ptr", g := Buffer(8, 0), "Ptr", b := Buffer(8, 0), "Ptr", a := Buffer(4, 0)), {R: NumGet(r, "Double"), G: NumGet(g, "Double"), B: NumGet(b, "Double"), A: NumGet(a, "Int")})
 
     /**
      * Generates an analogous color scheme.
@@ -1337,6 +1493,11 @@ class Color
      */
     Square() => this.Analogous(90, 4)
 
+    /**
+     * Applies a ColorMatrix to this Color.
+     * @param matrix The `ColorMatrix` to apply to the Color.
+     * @returns {Color}
+     */
     ApplyMatrix(matrix) => Color.FromPtr(DllCall("Color\ColorApplyMatrix", "Ptr", this.Ptr, "Ptr", matrix.Ptr, "Ptr"))
 
     /**
@@ -1348,7 +1509,7 @@ class Color
          * Default format string for RGB color representation.
          * @type {string}
          */
-        static RGB  := "rgba({R}, {G}, {B}, {A})"
+        static RGB := "rgba({R}, {G}, {B}, {A})"
 
         /**
          * Default format string for Linear sRGB color representation.
@@ -1386,6 +1547,16 @@ class Color
          */
         static XYZ_D65  := "xyz_d65({X}, {Y}, {Z})"
 
+        static UCS := "ucs({U}, {C}, {S})"
+
+        static UVW := "uvw({U}, {V}, {W})"
+
+        /**
+         * Default format string for XYY color representation.
+         * @type {string}
+         */
+        static XYY := "xyy({X:2}, {Y1:2}, {Y2})"
+
         /**
          * Default format string for Lab color representation.
          * @type {string}
@@ -1393,16 +1564,16 @@ class Color
         static Lab  := "lab({L}, {a}, {b})"
 
         /**
-         * Default format string for YIQ color representation.
-         * @type {string}
-         */
-        static YIQ  := "yiq({Y:2}, {I:2}, {Q:2})"
-
-        /**
          * Default format string for NCol color representation.
          * @type {string}
          */
         static NCol := "ncol({H}, {W}%, {B}%)"
+
+        /**
+         * Default format string for CMY color representation.
+         * @type {string}
+         */
+        static CMY := "cmy({C}, {M}, {Y})"
 
         /**
          * Default format string for CMYK color representation.
@@ -1426,13 +1597,75 @@ class Color
          * Default format string for HSP color representation.
          * @type {string}
          */
-        static HSP := "hsp({H}, {S}%, {P}%)"
+        static HSP := "hsp({H}, {S}%, {P})"
+
+        /**
+         * Default format string for HCY color representation.
+         * @type {string}
+         */
+        static HCY := "hcy({H}, {C}, {Y})"
+
+        /**
+         * Default format string for HCG color representation.
+         * @type {string}
+         */
+        static HCG := "hcg({H}, {C}, {G})"
+
+        /**
+         * Default format string for TSL color representation.
+         * @type {string}
+         */
+        static TSL := "tsl({T:2}, {S:2}, {L:2})"
 
         /**
          * Default format string for YPbPr color representation.
          * @type {string}
          */
         static YPbPr := "ypbpr({Y:2}, {Pb:2}, {Pr:2})"
+
+        /**
+         * Default format string for YCbCr color representation.
+         * @type {string}
+         */
+        static YCbCr := "ycbcr({Y}, {Cb}, {Cr})"
+
+        /**
+         * Default format string for YCgCo color representation.
+         * @type {string}
+         */
+        static YCgCo := "ycgco({Y:2}, {Cg:2}, {Co:2})"
+
+        /**
+         * Default format string for YcCbcCrc color representation.
+         * @type {string}
+         */
+        static YcCbcCrc := "yccbccrc({Yc:2}, {Cbc:2}, {Crc:2})"
+
+        /**
+         * Default format string for YDbDr color representation.
+         * @type {string}
+         */
+        static YDbDr := "ydbdr({Y:2}, {Db:2}, {Dr:2})"
+
+        /**
+         * Default format string for YUV color representation.
+         * @type {string}
+         */
+        static YUV := "yuv({Y:2}, {U:2}, {V:2})"
+
+        /**
+         * Default format string for YES color representation.
+         * @type {string}
+         */
+        static YES := "yes({Y:2}, {E:2}, {S:2})"
+
+        static JPEG := "jpeg({Y}, {Cb}, {Cr})"
+
+        /**
+         * Default format string for YIQ color representation.
+         * @type {string}
+         */
+        static YIQ  := "yiq({Y:2}, {I:2}, {Q:2})"
 
         /**
          * Default format string for LCH color representation.
@@ -1487,22 +1720,26 @@ class Color
          * @type {string}
          */
         static OKLCH := "oklch({L:2}, {C:2}, {H})"
+
+        static ACEScg := "acescg({R:2}, {G:2}, {B:2})"
     }
+
+    static YCbCrType => { BT601: 0, BT709: 1, BT2020: 2 }
 }
 
-class ColorBuffer
+class Canvas
 {
     Ptr := 0
 
     __New(width, height, col?)
     {
-        this.Ptr := DllCall("Color\CreateColorBufferFromWHC", "Int", width, "Int", height, "Ptr", (col ?? Color.Transparent).Ptr, "Ptr")
+        this.Ptr := DllCall("Color\CreateCanvasFromWHC", "Int", width, "Int", height, "Ptr", (col ?? Color.Transparent).Ptr, "Ptr")
     }
 
     /**
-     * Deletes the ColorBuffer and frees associated resources.
+     * Deletes the Canvas and frees associated resources.
      */
-    __Delete() => DllCall("Color\DeleteColorBuffer", "Ptr", this.Ptr)
+    __Delete() => DllCall("Color\DeleteCanvas", "Ptr", this.Ptr)
 
     /**
      * Gets or sets a color at the specified coordinates.
@@ -1517,14 +1754,14 @@ class ColorBuffer
     }
 
     /**
-     * Provides enumeration functionality for the ColorBuffer.
+     * Provides enumeration functionality for the Canvas.
      * @param {number} num - The number of values to return for each iteration.
      * @returns {function} An enumerator function based on the specified number.
      * @throws {ValueError} If an invalid enumerator type is specified.
      */
     __Enum(num)
     {
-        bufferSize := DllCall("Color\ColorBufferSize", "Ptr", this.Ptr, "Ptr")
+        bufferSize := DllCall("Color\CanvasSize", "Ptr", this.Ptr, "Ptr")
 
         enumColor(&col)
         {
@@ -1534,7 +1771,7 @@ class ColorBuffer
                 index := 0
                 return false
             }
-            col := Color.FromPtr(DllCall("Color\ColorBufferGetAt", "Ptr", this.Ptr, "Ptr", index, "Ptr"))
+            col := Color.FromPtr(DllCall("Color\CanvasGetAt", "Ptr", this.Ptr, "Ptr", index, "Ptr"))
             index++
             return true
         }
@@ -1547,7 +1784,7 @@ class ColorBuffer
                 index := 0
                 return false
             }
-            DllCall("Color\ColorBufferGetXY", "Ptr", this.Ptr, "Ptr", index, "Int*", &x := 0, "Int*", &y := 0)
+            DllCall("Color\CanvasGetXY", "Ptr", this.Ptr, "Ptr", index, "Int*", &x := 0, "Int*", &y := 0)
             index++
             return true
         }
@@ -1560,8 +1797,8 @@ class ColorBuffer
                 index := 0
                 return false
             }
-            DllCall("Color\ColorBufferGetXY", "Ptr", this.Ptr, "Ptr", index, "Int*", &x := 0, "Int*", &y := 0)
-            col := Color.FromPtr(DllCall("Color\ColorBufferGetAt", "Ptr", this.Ptr, "Ptr", index, "Ptr"))
+            DllCall("Color\CanvasGetXY", "Ptr", this.Ptr, "Ptr", index, "Int*", &x := 0, "Int*", &y := 0)
+            col := Color.FromPtr(DllCall("Color\CanvasGetAt", "Ptr", this.Ptr, "Ptr", index, "Ptr"))
             index++
             return true
         }
@@ -1576,56 +1813,56 @@ class ColorBuffer
     }
 
     /**
-     * Gets the width of the ColorBuffer.
+     * Gets the width of the Canvas.
      * @returns {number}
      */
     Width
     {
-        get => DllCall("Color\GetColorBufferWidth", "Ptr", this.Ptr, "Int")
+        get => DllCall("Color\GetCanvasWidth", "Ptr", this.Ptr, "Int")
     }
 
     /**
-     * Gets the height of the ColorBuffer.
+     * Gets the height of the Canvas.
      * @returns {number}
      */
     Height
     {
-        get => DllCall("Color\GetColorBufferHeight", "Ptr", this.Ptr, "Int")
+        get => DllCall("Color\GetCanvasHeight", "Ptr", this.Ptr, "Int")
     }
 
     /**
-     * Gets the total number of pixels in the ColorBuffer.
+     * Gets the total number of pixels in the Canvas.
      * @returns {number}
      */
     Size
     {
-        get => DllCall("Color\GetColorBufferSize", "Ptr", this.Ptr, "Int")
+        get => DllCall("Color\GetCanvasSize", "Ptr", this.Ptr, "Int")
     }
 
     Stride
     {
-        get => DllCall("Color\GetColorBufferStride", "Ptr", this.Ptr, "Int")
+        get => DllCall("Color\GetCanvasStride", "Ptr", this.Ptr, "Int")
     }
 
     /**
-     * Creates a ColorBuffer from a BitmapBuffer object.
+     * Creates a Canvas from a BitmapBuffer object.
      * @static
-     * @param {ImagePut.BitmapBuffer} bBuffer - The BitmapBuffer object to create the ColorBuffer from.
-     * @returns {ColorBuffer}
+     * @param {ImagePut.BitmapBuffer} bBuffer - The BitmapBuffer object to create the Canvas from.
+     * @returns {Canvas}
      */
     static FromBitmapBuffer(bBuffer)
     {
         if Type(bBuffer) == "ImagePut.BitmapBuffer"
-            return ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromBuffer", "Ptr", bBuffer.Ptr, "Int", bBuffer.Width, "Int", bBuffer.Height, "Ptr"))
+            return Canvas.FromPtr(DllCall("Color\CreateCanvasFromBuffer", "Ptr", bBuffer.Ptr, "Int", bBuffer.Width, "Int", bBuffer.Height, "Ptr"))
         else
             throw ValueError("Invalid BitmapBuffer object or incorrect type.")
     }
 
     /**
-     * Creates a ColorBuffer from a 2D array of Color objects.
+     * Creates a Canvas from a 2D array of Color objects.
      * @static
      * @param {Color[[],[],...]} colors - A 2D array of Color objects.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
     static FromArray(colors)
     {
@@ -1639,97 +1876,97 @@ class ColorBuffer
                 for x, c in row
                     NumPut("Ptr", c.Ptr, colorArray, ((y - 1) * width + (x - 1)) * A_PtrSize)
 
-            this.Ptr := DllCall("Color\CreateColorBufferFromArray", "Ptr", colorArray.Ptr, "Int", width, "Int", height, "Ptr")
+            this.Ptr := DllCall("Color\CreateCanvasFromArray", "Ptr", colorArray.Ptr, "Int", width, "Int", height, "Ptr")
         }
     }
 
     /**
-     * Exports the ColorBuffer as an HBITMAP.
-     * @param {number} [width=0] - The desired width of the HBITMAP. If 0, uses the ColorBuffer's width.
-     * @param {number} [height=0] - The desired height of the HBITMAP. If 0, uses the ColorBuffer's height.
+     * Exports the Canvas as an HBITMAP.
+     * @param {number} [width=0] - The desired width of the HBITMAP. If 0, uses the Canvas's width.
+     * @param {number} [height=0] - The desired height of the HBITMAP. If 0, uses the Canvas's height.
      * @returns {Ptr} The HBITMAP handle of the exported image.
      */
-    ToHBITMAP(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHBITMAP", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+    ToHBITMAP(width := 0, height := 0) => DllCall("Color\ExportCanvasAsHBITMAP", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
 
     /**
-     * Creates a ColorBuffer from an HBITMAP handle.
+     * Creates a Canvas from an HBITMAP handle.
      * @param {Ptr} hBitmap - The HBITMAP handle.
-     * @returns {ColorBuffer} A new ColorBuffer instance created from the HBITMAP.
+     * @returns {Canvas} A new Canvas instance created from the HBITMAP.
      */
-    static FromHBITMAP(hBitmap, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHBITMAP", "Ptr", hBitmap, "Int", width, "Int", height, "Ptr"))
+    static FromHBITMAP(hBitmap, width := 0, height := 0) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromHBITMAP", "Ptr", hBitmap, "Int", width, "Int", height, "Ptr"))
 
     /**
-     * Exports the ColorBuffer as an HDC.
-     * @param {number} [width=0] - The desired width of the HDC. If 0, uses the ColorBuffer's width.
-     * @param {number} [height=0] - The desired height of the HDC. If 0, uses the ColorBuffer's height.
+     * Exports the Canvas as an HDC.
+     * @param {number} [width=0] - The desired width of the HDC. If 0, uses the Canvas's width.
+     * @param {number} [height=0] - The desired height of the HDC. If 0, uses the Canvas's height.
      * @returns {Ptr} The HDC handle of the exported image.
      */
-    ToHDC(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHDC", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+    ToHDC(width := 0, height := 0) => DllCall("Color\ExportCanvasAsHDC", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
 
     /**
-     * Creates a ColorBuffer from an HDC handle.
+     * Creates a Canvas from an HDC handle.
      * @static
      * @param {Ptr} hdc - The HDC handle.
      * @param {number} x - The x-coordinate of the region to capture.
      * @param {number} y - The y-coordinate of the region to capture.
      * @param {number} width - The width of the region to capture.
      * @param {number} height - The height of the region to capture.
-     * @returns {ColorBuffer} A new ColorBuffer instance created from the HDC region.
+     * @returns {Canvas} A new Canvas instance created from the HDC region.
      */
-    static FromHDC(hdc, x := 0, y := 0, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHDC", "Ptr", hdc, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
+    static FromHDC(hdc, x := 0, y := 0, width := 0, height := 0) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromHDC", "Ptr", hdc, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
 
     /**
-     * Exports the ColorBuffer as an HICON.
-     * @param {number} [width=0] - The desired width of the HICON. If 0, uses the ColorBuffer's width.
-     * @param {number} [height=0] - The desired height of the HICON. If 0, uses the ColorBuffer's height.
+     * Exports the Canvas as an HICON.
+     * @param {number} [width=0] - The desired width of the HICON. If 0, uses the Canvas's width.
+     * @param {number} [height=0] - The desired height of the HICON. If 0, uses the Canvas's height.
      * @returns {Ptr} The HICON handle of the exported image.
      */
-    ToHICON(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHICON", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+    ToHICON(width := 0, height := 0) => DllCall("Color\ExportCanvasAsHICON", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
 
     /**
-     * Creates a ColorBuffer from an HICON handle.
+     * Creates a Canvas from an HICON handle.
      * @static
      * @param {Ptr} hIcon - The HICON handle.
-     * @returns {ColorBuffer} A new ColorBuffer instance created from the HICON.
+     * @returns {Canvas} A new Canvas instance created from the HICON.
      */
-    static FromHICON(hIcon) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHICON", "Ptr", hIcon, "Ptr"))
+    static FromHICON(hIcon) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromHICON", "Ptr", hIcon, "Ptr"))
 
     /**
-     * Exports the ColorBuffer as an HCURSOR.
-     * @param {number} [width=0] - The desired width of the HCURSOR. If 0, uses the ColorBuffer's width.
-     * @param {number} [height=0] - The desired height of the HCURSOR. If 0, uses the ColorBuffer's height.
+     * Exports the Canvas as an HCURSOR.
+     * @param {number} [width=0] - The desired width of the HCURSOR. If 0, uses the Canvas's width.
+     * @param {number} [height=0] - The desired height of the HCURSOR. If 0, uses the Canvas's height.
      * @returns {Ptr} The HCURSOR handle of the exported image.
      */
-    ToHCURSOR(width := 0, height := 0) => DllCall("Color\ExportColorBufferAsHCURSOR", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
+    ToHCURSOR(width := 0, height := 0) => DllCall("Color\ExportCanvasAsHCURSOR", "Ptr", this.Ptr, "Int", width, "Int", height, "Ptr")
 
     /**
-     * Creates a ColorBuffer from an HCURSOR handle.
+     * Creates a Canvas from an HCURSOR handle.
      * @static
      * @param {Ptr} hCursor - The HCURSOR handle.
-     * @returns {ColorBuffer} A new ColorBuffer instance created from the HCURSOR.
+     * @returns {Canvas} A new Canvas instance created from the HCURSOR.
      */
-    static FromHCURSOR(hCursor) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHCURSOR", "Ptr", hCursor, "Ptr"))
+    static FromHCURSOR(hCursor) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromHCURSOR", "Ptr", hCursor, "Ptr"))
 
-    static FromHWND(hWnd, x := 0, y := 0, width := 0, height := 0) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromHWND", "Ptr", hWnd, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
+    static FromHWND(hWnd, x := 0, y := 0, width := 0, height := 0) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromHWND", "Ptr", hWnd, "Int", x, "Int", y, "Int", width, "Int", height, "Ptr"))
 
-    static FromGradient(grad, width, height) => ColorBuffer.FromPtr(DllCall("Color\CreateColorBufferFromGradient", "Ptr", grad.Ptr, "Int", width, "Int", height, "Ptr"))
+    static FromGradient(grad, width, height) => Canvas.FromPtr(DllCall("Color\CreateCanvasFromGradient", "Ptr", grad.Ptr, "Int", width, "Int", height, "Ptr"))
 
     /**
-     * Resizes the ColorBuffer to the specified dimensions.
+     * Resizes the Canvas to the specified dimensions.
      * @param {number} width - The new width.
      * @param {number} height - The new height.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Resize(width, height, resizeImage := true, fillColor := Color.Transparent) => (DllCall("Color\ResizeColorBuffer", "Ptr", this.Ptr, "Int", width, "Int", height, "Int", resizeImage, "Ptr", fillColor.Ptr), this)
+    Resize(width, height, resizeImage := true, fillColor := Color.Transparent) => (DllCall("Color\ResizeCanvas", "Ptr", this.Ptr, "Int", width, "Int", height, "Int", resizeImage, "Ptr", fillColor.Ptr), this)
 
-    Scale(scale) => (DllCall("Color\ScaleColorBuffer", "Ptr", this.Ptr, "Double", scale), this)
+    Scale(scale) => (DllCall("Color\ScaleCanvas", "Ptr", this.Ptr, "Double", scale), this)
 
     /**
-     * Rotates the ColorBuffer by the specified angle.
+     * Rotates the Canvas by the specified angle.
      * @param {number} angle - The rotation angle in degrees.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Rotate(angle) => (DllCall("Color.dll\RotateColorBuffer", "Ptr", this.Ptr, "Double", angle), this)
+    Rotate(angle) => (DllCall("Color.dll\RotateCanvas", "Ptr", this.Ptr, "Double", angle), this)
 
     /**
      * Gets the color as an integer (0xAARRGGBB) at the specified coordinates.
@@ -1760,202 +1997,202 @@ class ColorBuffer
      * @param {number} x - The x-coordinate.
      * @param {number} y - The y-coordinate.
      * @param {Color} color - The Color object to set.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
     SetColor(x, y, color) => (DllCall("Color\SetColorInBuffer", "Ptr", this.Ptr, "Int", x, "Int", y, "Ptr", color.Ptr), this)
 
     /**
      * Shifts the red component of all colors in the buffer by the specified amount.
      * @param {number} amount - The amount to shift the red component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftRed(amount) => (DllCall("Color\ShiftRedColorBuffer", "Ptr", this.Ptr, "Int", amount), this)
+    ShiftRed(amount) => (DllCall("Color\ShiftRedCanvas", "Ptr", this.Ptr, "Int", amount), this)
 
     /**
      * Shifts the green component of all colors in the buffer by the specified amount.
      * @param {number} amount - The amount to shift the green component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftGreen(amount) => (DllCall("Color\ShiftGreenColorBuffer", "Ptr", this.Ptr, "Int", amount), this)
+    ShiftGreen(amount) => (DllCall("Color\ShiftGreenCanvas", "Ptr", this.Ptr, "Int", amount), this)
 
     /**
      * Shifts the blue component of all colors in the buffer by the specified amount.
      * @param {number} amount - The amount to shift the blue component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftBlue(amount) => (DllCall("Color\ShiftBlueColorBuffer", "Ptr", this.Ptr, "Int", amount), this)
+    ShiftBlue(amount) => (DllCall("Color\ShiftBlueCanvas", "Ptr", this.Ptr, "Int", amount), this)
 
     /**
      * Shifts the alpha component of all colors in the buffer by the specified amount.
      * @param {number} amount - The amount to shift the alpha component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftAlpha(amount) => (DllCall("Color\ShiftAlphaColorBuffer", "Ptr", this.Ptr, "Int", amount), this)
+    ShiftAlpha(amount) => (DllCall("Color\ShiftAlphaCanvas", "Ptr", this.Ptr, "Int", amount), this)
 
     /**
      * Sets the red component of all colors in the buffer to the specified value.
      * @param {number} value - The value to set for the red component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    SetRed(value) => (DllCall("Color\SetRedColorBuffer", "Ptr", this.Ptr, "Int", value), this)
+    SetRed(value) => (DllCall("Color\SetRedCanvas", "Ptr", this.Ptr, "Int", value), this)
 
     /**
      * Sets the green component of all colors in the buffer to the specified value.
      * @param {number} value - The value to set for the green component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    SetGreen(value) => (DllCall("Color\SetGreenColorBuffer", "Ptr", this.Ptr, "Int", value), this)
+    SetGreen(value) => (DllCall("Color\SetGreenCanvas", "Ptr", this.Ptr, "Int", value), this)
 
     /**
      * Sets the blue component of all colors in the buffer to the specified value.
      * @param {number} value - The value to set for the blue component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    SetBlue(value) => (DllCall("Color\SetBlueColorBuffer", "Ptr", this.Ptr, "Int", value), this)
+    SetBlue(value) => (DllCall("Color\SetBlueCanvas", "Ptr", this.Ptr, "Int", value), this)
 
     /**
      * Sets the alpha component of all colors in the buffer to the specified value.
      * @param {number} value - The value to set for the alpha component.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    SetAlpha(value) => (DllCall("Color\SetAlphaColorBuffer", "Ptr", this.Ptr, "Int", value), this)
+    SetAlpha(value) => (DllCall("Color\SetAlphaCanvas", "Ptr", this.Ptr, "Int", value), this)
 
-    ApplyMatrix(matrix) => (DllCall("Color\ColorBufferApplyMatrix", "Ptr", this.Ptr, "Ptr", matrix.Ptr), this)
+    ApplyMatrix(matrix) => (DllCall("Color\CanvasApplyMatrix", "Ptr", this.Ptr, "Ptr", matrix.Ptr), this)
 
     /**
      * Inverts all colors in the buffer.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Invert() => (DllCall("Color\InvertColorBuffer", "Ptr", this.Ptr), this)
+    Invert() => (DllCall("Color\InvertCanvas", "Ptr", this.Ptr), this)
 
     /**
      * Applies the complement effect to all colors in the buffer.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Complement() => (DllCall("Color\ComplementColorBuffer", "Ptr", this.Ptr), this)
+    Complement() => (DllCall("Color\ComplementCanvas", "Ptr", this.Ptr), this)
 
     /**
      * Shifts the hue of all colors in the buffer by the specified degrees.
      * @param {number} degrees - The amount to shift the hue in degrees.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftHue(degrees) => (DllCall("Color\ShiftHueColorBuffer", "Ptr", this.Ptr, "Double", degrees), this)
+    ShiftHue(degrees) => (DllCall("Color\ShiftHueCanvas", "Ptr", this.Ptr, "Double", degrees), this)
 
     /**
      * Converts all colors in the buffer to grayscale.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Grayscale() => (DllCall("Color\GrayscaleColorBuffer", "Ptr", this.Ptr), this)
+    Grayscale() => (DllCall("Color\GrayscaleCanvas", "Ptr", this.Ptr), this)
 
     /**
      * Applies a sepia tone effect to all colors in the buffer.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Sepia(factor) => (DllCall("Color\SepiaColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    Sepia(factor) => (DllCall("Color\SepiaCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
-    CrossProcess(factor) => (DllCall("Color\CrossProcessColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    CrossProcess(factor) => (DllCall("Color\CrossProcessCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
-    Moonlight(factor) => (DllCall("Color\MoonlightColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    Moonlight(factor) => (DllCall("Color\MoonlightCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
-    VintageFilm(factor) => (DllCall("Color\VintageFilmColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    VintageFilm(factor) => (DllCall("Color\VintageFilmCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
-    Technicolor(factor) => (DllCall("Color\TechnicolorColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    Technicolor(factor) => (DllCall("Color\TechnicolorCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
-    Polaroid(factor) => (DllCall("Color\PolaroidColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    Polaroid(factor) => (DllCall("Color\PolaroidCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Increases the saturation of all colors in the buffer.
      * @param {number} amount - The amount to increase saturation.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftSaturation(amount) => (DllCall("Color\ShiftSaturationColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftSaturation(amount) => (DllCall("Color\ShiftSaturationCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Lightens all colors in the buffer.
      * @param {number} amount - The amount to lighten the colors.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ShiftLightness(amount) => (DllCall("Color\ShiftLightnessColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftLightness(amount) => (DllCall("Color\ShiftLightnessCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
-    ShiftValue(amount) => (DllCall("Color\ShiftValueColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftValue(amount) => (DllCall("Color\ShiftValueCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
-    ShiftIntensity(amount) => (DllCall("Color\ShiftIntensityColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftIntensity(amount) => (DllCall("Color\ShiftIntensityCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
-    ShiftWhiteLevel(amount) => (DllCall("Color\ShiftWhiteLevelColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftWhiteLevel(amount) => (DllCall("Color\ShiftWhiteLevelCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
-    ShiftBlackLevel(amount) => (DllCall("Color\ShiftBlackLevelColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftBlackLevel(amount) => (DllCall("Color\ShiftBlackLevelCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
-    ShiftContrast(amount) => (DllCall("Color\ShiftContrastColorBuffer", "Ptr", this.Ptr, "Double", amount), this)
+    ShiftContrast(amount) => (DllCall("Color\ShiftContrastCanvas", "Ptr", this.Ptr, "Double", amount), this)
 
     /**
      * Applies a pixelation effect to the buffer.
      * @param {number} pixelSize - The size of each "pixel" in the pixelation effect.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Pixelate(pixelSize) => (DllCall("Color.dll\PixelateColorBuffer", "Ptr", this.Ptr, "Int", pixelSize), this)
+    Pixelate(pixelSize) => (DllCall("Color.dll\PixelateCanvas", "Ptr", this.Ptr, "Int", pixelSize), this)
 
     /**
      * Applies a blur effect to the buffer.
      * @param {number} radius - The radius of the blur effect.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Blur(radius) => (DllCall("Color.dll\BlurColorBuffer", "Ptr", this.Ptr, "Int", radius), this)
+    Blur(radius) => (DllCall("Color.dll\BlurCanvas", "Ptr", this.Ptr, "Int", radius), this)
 
-    GaussianBlur(sigma) => (DllCall("Color.dll\GaussianBlurColorBuffer", "Ptr", this.Ptr, "Float", sigma), this)
+    GaussianBlur(sigma) => (DllCall("Color.dll\GaussianBlurCanvas", "Ptr", this.Ptr, "Float", sigma), this)
 
     /**
      * Applies a sharpening effect to the buffer.
      * @param {number} amount - The intensity of the sharpening effect.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Sharpen(amount) => (DllCall("Color.dll\SharpenColorBuffer", "Ptr", this.Ptr, "Float", amount), this)
+    Sharpen(amount) => (DllCall("Color.dll\SharpenCanvas", "Ptr", this.Ptr, "Float", amount), this)
 
     /**
      * Adjusts the contrast of all colors in the buffer.
      * @param {number} factor - The contrast adjustment factor.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    AdjustContrast(factor) => (DllCall("Color\AdjustContrastColorBuffer", "Ptr", this.Ptr, "Double", factor), this)
+    AdjustContrast(factor) => (DllCall("Color\AdjustContrastCanvas", "Ptr", this.Ptr, "Double", factor), this)
 
     /**
      * Adjusts the color balance of the buffer.
      * @param {number} redFactor - The adjustment factor for the red channel.
      * @param {number} greenFactor - The adjustment factor for the green channel.
      * @param {number} blueFactor - The adjustment factor for the blue channel.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    ColorBalance(redFactor, greenFactor, blueFactor) => (DllCall("Color\AdjustColorBalanceColorBuffer", "Ptr", this.Ptr, "Double", redFactor, "Double", greenFactor, "Double", blueFactor), this)
+    ColorBalance(redFactor, greenFactor, blueFactor) => (DllCall("Color\AdjustColorBalanceCanvas", "Ptr", this.Ptr, "Double", redFactor, "Double", greenFactor, "Double", blueFactor), this)
 
     /**
-     * Overlays another ColorBuffer onto this one.
-     * @param {ColorBuffer} overlayBuffer - The ColorBuffer to overlay.
+     * Overlays another Canvas onto this one.
+     * @param {Canvas} overlayBuffer - The Canvas to overlay.
      * @param {number} x - The x-coordinate to place the overlay.
      * @param {number} y - The y-coordinate to place the overlay.
      * @param {number} opacity - The opacity of the overlay (0 to 255).
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    OverlayColorBuffer(overlayBuffer, x, y, opacity := 1.0) => (DllCall("Color\OverlayImageColorBuffer", "Ptr", this.Ptr, "Ptr", overlayBuffer.Ptr, "Int", x, "Int", y, "Double", opacity), this)
+    OverlayCanvas(overlayBuffer, x, y, opacity := 1.0) => (DllCall("Color\OverlayImageCanvas", "Ptr", this.Ptr, "Ptr", overlayBuffer.Ptr, "Int", x, "Int", y, "Double", opacity), this)
 
     /**
      * Applies an emboss effect to the buffer.
      * @param {number} [depth=1.0] - The depth of the emboss effect.
      * @param {number} [angle=45.0] - The angle of the emboss effect in degrees.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Emboss(depth := 1.0, angle := 45.0) => (DllCall("Color\ApplyEmbossColorBuffer", "Ptr", this.Ptr, "Double", depth, "Double", angle), this)
+    Emboss(depth := 1.0, angle := 45.0) => (DllCall("Color\ApplyEmbossCanvas", "Ptr", this.Ptr, "Double", depth, "Double", angle), this)
 
     /**
      * Applies an edge detection effect to the buffer.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    EdgeDetect() => (DllCall("Color\ApplyEdgeDetectColorBuffer", "Ptr", this.Ptr), this)
+    EdgeDetect() => (DllCall("Color\ApplyEdgeDetectCanvas", "Ptr", this.Ptr), this)
 
     /**
      * Flips the buffer horizontally or vertically.
      * @param {boolean} [horizontal=true] - If true, flips horizontally; if false, flips vertically.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Flip(horizontal := true) => (DllCall("Color.dll\FlipColorBuffer", "Ptr", this.Ptr, "Int", horizontal), this)
+    Flip(horizontal := true) => (DllCall("Color.dll\FlipCanvas", "Ptr", this.Ptr, "Int", horizontal), this)
 
     /**
      * Crops the buffer to the specified dimensions.
@@ -1963,40 +2200,40 @@ class ColorBuffer
      * @param {number} y - The y-coordinate of the top-left corner of the crop area.
      * @param {number} width - The width of the crop area.
      * @param {number} height - The height of the crop area.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    Crop(x, y, width, height) => (DllCall("Color.dll\CropColorBuffer", "Ptr", this.Ptr, "Int", x, "Int", y, "Int", width, "Int", height), this)
+    Crop(x, y, width, height) => (DllCall("Color.dll\CropCanvas", "Ptr", this.Ptr, "Int", x, "Int", y, "Int", width, "Int", height), this)
 
     /**
      * Calculates the average color of the entire buffer.
      * @returns {Color}
      */
-    AverageColor() => Color.FromPtr((DllCall("Color\AverageColorBuffer", "Ptr", this.Ptr, "Ptr")))
+    AverageColor() => Color.FromPtr((DllCall("Color\AverageCanvas", "Ptr", this.Ptr, "Ptr")))
 
     /**
      * Applies a vignette effect to the buffer.
      * @param {number} [strength=0.3] - The strength of the vignette effect (0.0 to 1.0).
      * @param {number} [radius=1.0] - The radius of the vignette effect.
-     * @returns {ColorBuffer} The current ColorBuffer instance (for method chaining).
+     * @returns {Canvas} The current Canvas instance (for method chaining).
      */
-    Vignette(strength := 0.3, radius := 1.0) => (DllCall("Color.dll\ApplyVignetteColorBuffer", "Ptr", this.Ptr, "Double", strength, "Double", radius), this)
+    Vignette(strength := 0.3, radius := 1.0) => (DllCall("Color.dll\ApplyVignetteCanvas", "Ptr", this.Ptr, "Double", strength, "Double", radius), this)
 
     /**
      * Applies a two-color noise effect to the buffer.
      * @param {number} [density=0.05] - The density of the noise (0.0 to 1.0).
      * @param {Color} [saltColor=Color.White] - The first color.
      * @param {Color} [pepperColor=Color.Black] - The second color.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    TwoColorNoise(density := 0.05, saltColor := Color.White, pepperColor := Color.Black) => (DllCall("Color.dll\ApplyTwoColorNoiseColorBuffer", "Ptr", this.Ptr, "Double", density, "Ptr", saltColor.Ptr, "Ptr", pepperColor.Ptr), this)
+    TwoColorNoise(density := 0.05, saltColor := Color.White, pepperColor := Color.Black) => (DllCall("Color.dll\ApplyTwoColorNoiseCanvas", "Ptr", this.Ptr, "Double", density, "Ptr", saltColor.Ptr, "Ptr", pepperColor.Ptr), this)
 
     /**
      * Applies Gaussian noise to the buffer.
      * @param {number} [mean=0.0] - The mean of the Gaussian distribution.
      * @param {number} [stdDev=10.0] - The standard deviation of the Gaussian distribution.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    GaussianNoise(mean := 0.0, stdDev := 10.0) => (DllCall("Color.dll\ApplyGaussianNoiseColorBuffer", "Ptr", this.Ptr, "Double", mean, "Double", stdDev), this)
+    GaussianNoise(mean := 0.0, stdDev := 10.0) => (DllCall("Color.dll\ApplyGaussianNoiseCanvas", "Ptr", this.Ptr, "Double", mean, "Double", stdDev), this)
 
     /**
      * Applies Perlin noise to the color buffer.
@@ -2005,59 +2242,59 @@ class ColorBuffer
      * @param {number} octaves - The number of noise layers to combine. More octaves add finer details but increase computation time.
      * @param {number} persistence - Controls how quickly the amplitude decreases for each octave. `0-1`, where lower values create smoother noise.
      * @param {number} lacunarity - Determines how quickly the frequency increases for each octave. Values greater than 1 increase detail in higher octaves.
-     * @returns {this} The ColorBuffer object, allowing for method chaining.
+     * @returns {this} The Canvas object, allowing for method chaining.
      */
-    PerlinNoise(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplyPerlinNoiseColorBuffer", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
+    PerlinNoise(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplyPerlinNoiseCanvas", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
 
-    SimplexNoise(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplySimplexNoiseColorBuffer", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
+    SimplexNoise(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplySimplexNoiseCanvas", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
 
-    FractalBrownianMotion(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplyFractalBrownianMotionColorBuffer", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
+    FractalBrownianMotion(frequency := 4.0, amplitude := 1.0, octaves := 4, persistence := 0.5, lacunarity := 2.0) => (DllCall("Color.dll\ApplyFractalBrownianMotionCanvas", "Ptr", this.Ptr, "Double", frequency, "Double", amplitude, "Int", octaves, "Double", persistence, "Double", lacunarity), this)
 
     /**
      * Applies a Voronoi diagram effect to the color buffer.
      * @param {number} [numPoints=20] - The number of seed points for the Voronoi diagram. More points create a more complex cellular pattern.
      * @param {number} [falloff=1.0] - Controls the sharpness of cell edges. Higher values create sharper edges, while lower values create smoother transitions.
      * @param {number} [strength=1] - How strongly the effect is applied. Higher values create more pronounced changes.
-     * @returns {this} The ColorBuffer object, allowing for method chaining.
+     * @returns {this} The Canvas object, allowing for method chaining.
      */
-    VoronoiDiagram(points := 20, falloff := 1, strength := 1) => (DllCall("Color.dll\ApplyVoronoiDiagramColorBuffer", "Ptr", this.Ptr, "Int", points, "Double", falloff, "Double", strength), this)
+    VoronoiDiagram(points := 20, falloff := 1, strength := 1) => (DllCall("Color.dll\ApplyVoronoiDiagramCanvas", "Ptr", this.Ptr, "Int", points, "Double", falloff, "Double", strength), this)
 
     /**
      * Applies a static Plasma effect to the color buffer, creating vibrant, swirling patterns.
      * @param {number} [frequency=5.0] - Controls the density of the plasma pattern. Higher values create more intricate patterns.
      * @param {number} [phase=0.0] - Adjusts the overall pattern shift. Different values create unique variations of the pattern.
-     * @returns {this} The ColorBuffer object, allowing for method chaining.
+     * @returns {this} The Canvas object, allowing for method chaining.
      */
-    Plasma(frequency := 5, phase := 0) => (DllCall("Color.dll\PlasmaEffectColorBuffer", "Ptr", this.Ptr, "Double", frequency, "Double", phase), this)
+    Plasma(frequency := 5, phase := 0) => (DllCall("Color.dll\PlasmaEffectCanvas", "Ptr", this.Ptr, "Double", frequency, "Double", phase), this)
 
-    DiamondSquare(roughness := 5, waterLevel := 1, levelsPerStop := 5) => (DllCall("Color.dll\DiamondSquareEffectColorBuffer", "Ptr", this.Ptr, "Double", roughness, "Double", waterLevel, "Double", levelsPerStop), this)
+    DiamondSquare(roughness := 5, waterLevel := 1, levelsPerStop := 5) => (DllCall("Color.dll\DiamondSquareEffectCanvas", "Ptr", this.Ptr, "Double", roughness, "Double", waterLevel, "Double", levelsPerStop), this)
 
-    Posterize(levels := 4) => (DllCall("Color.dll\PosterizeColorBuffer", "Ptr", this.Ptr, "Int", levels), this)
+    Posterize(levels := 4) => (DllCall("Color.dll\PosterizeCanvas", "Ptr", this.Ptr, "Int", levels), this)
 
     /**
-     * Creates a deep copy of the ColorBuffer.
-     * @returns {ColorBuffer} A new ColorBuffer instance that is a copy of the current one.
+     * Creates a deep copy of the Canvas.
+     * @returns {Canvas} A new Canvas instance that is a copy of the current one.
      */
-    Copy() => ColorBuffer.FromPtr(DllCall("Color\CopyColorBuffer", "Ptr", this.Ptr, "Ptr"))
+    Copy() => Canvas.FromPtr(DllCall("Color\CopyCanvas", "Ptr", this.Ptr, "Ptr"))
 
     /**
-     * Creates a copy of a specific region of the ColorBuffer.
+     * Creates a copy of a specific region of the Canvas.
      * @param {number} x - The x-coordinate of the top-left corner of the region.
      * @param {number} y - The y-coordinate of the top-left corner of the region.
      * @param {number} w - The width of the region.
      * @param {number} h - The height of the region.
-     * @returns {ColorBuffer} A new ColorBuffer instance containing the specified region.
+     * @returns {Canvas} A new Canvas instance containing the specified region.
      */
-    CopyRegion(x, y, w, h) => ColorBuffer.FromPtr(DllCall("Color\CopyColorBufferRegion", "Ptr", this.Ptr, "Int", x, "Int", y, "Int", w, "Int", h, "Ptr"))
+    CopyRegion(x, y, w, h) => Canvas.FromPtr(DllCall("Color\CopyCanvasRegion", "Ptr", this.Ptr, "Int", x, "Int", y, "Int", w, "Int", h, "Ptr"))
 
     /**
-     * Applies a mapping function to a specific region of the ColorBuffer.
+     * Applies a mapping function to a specific region of the Canvas.
      * @param {number} x - The x-coordinate of the top-left corner of the region.
      * @param {number} y - The y-coordinate of the top-left corner of the region.
      * @param {number} width - The width of the region.
      * @param {number} height - The height of the region.
      * @param {function} mapFunction - A function that takes (x, y, Color) as arguments and returns a new Color.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
     MapRegion(x, y, width, height, mapFunction)
     {
@@ -2068,22 +2305,22 @@ class ColorBuffer
     }
 
     /**
-     * Applies a mapping function to the entire ColorBuffer.
+     * Applies a mapping function to the entire Canvas.
      * @param {function} mapFunction - A function that takes (x, y, Color) as arguments and returns a new Color.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
     Map(mapFunction) => this.MapRegion(0, 0, this.Width, this.Height, mapFunction)
 
-    ForEach(func) => (callbackPtr := CallbackCreate(func), DllCall("Color\ColorBufferForEach", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr), this)
+    ForEach(func) => (callbackPtr := CallbackCreate(func), DllCall("Color\CanvasForEach", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr), this)
 
-    Find(color) => DllCall("Color\ColorBufferFind", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
+    Find(color) => DllCall("Color\CanvasFind", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
 
-    FindLast(color) => DllCall("Color\ColorBufferFindLast", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
+    FindLast(color) => DllCall("Color\CanvasFindLast", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
 
     FindAll(color)
     {
         countPtr := Buffer(4, 0)
-        resultPtr := DllCall("Color\ColorBufferFindAll", "Ptr", this.Ptr, "Ptr", color.Ptr, "Ptr", countPtr, "Ptr")
+        resultPtr := DllCall("Color\CanvasFindAll", "Ptr", this.Ptr, "Ptr", color.Ptr, "Ptr", countPtr, "Ptr")
         count := NumGet(countPtr, 0, "Int")
         result := []
 
@@ -2094,50 +2331,50 @@ class ColorBuffer
         return result
     }
 
-    Swap(index1, index2) => (DllCall("Color\ColorBufferSwap", "Ptr", this.Ptr, "Int", index1, "Int", index2), this)
+    Swap(index1, index2) => (DllCall("Color\CanvasSwap", "Ptr", this.Ptr, "Int", index1, "Int", index2), this)
 
-    Filter(predicate) => (callbackPtr := CallbackCreate(predicate), resultPtr := DllCall("Color\ColorBufferFilter", "Ptr", this.Ptr, "Ptr", callbackPtr, "Ptr"), CallbackFree(callbackPtr), ColorBuffer.FromPtr(resultPtr))
+    Filter(predicate) => (callbackPtr := CallbackCreate(predicate), resultPtr := DllCall("Color\CanvasFilter", "Ptr", this.Ptr, "Ptr", callbackPtr, "Ptr"), CallbackFree(callbackPtr), Canvas.FromPtr(resultPtr))
 
-    Count(color) => DllCall("Color\ColorBufferCount", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
+    Count(color) => DllCall("Color\CanvasCount", "Ptr", this.Ptr, "Ptr", color.Ptr, "Int")
 
-    CountUnique() => DllCall("Color\ColorBufferCountUniqueColors", "Ptr", this.Ptr, "Int")
+    CountUnique() => DllCall("Color\CanvasCountUniqueColors", "Ptr", this.Ptr, "Int")
 
-    Shuffle() => (DllCall("Color\ColorBufferShuffle", "Ptr", this.Ptr), this)
+    Shuffle() => (DllCall("Color\CanvasShuffle", "Ptr", this.Ptr), this)
 
-    Clear() => (DllCall("Color\ColorBufferClear", "Ptr", this.Ptr), this)
+    Clear() => (DllCall("Color\CanvasClear", "Ptr", this.Ptr), this)
 
-    Sort(compare) => (callbackPtr := CallbackCreate(compare), DllCall("Color\ColorBufferSort", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr), this)
+    Sort(compare) => (callbackPtr := CallbackCreate(compare), DllCall("Color\CanvasSort", "Ptr", this.Ptr, "Ptr", callbackPtr), CallbackFree(callbackPtr), this)
 
-    AppendRight(other) => (DllCall("Color\ColorBufferAppendRight", "Ptr", this.Ptr, "Ptr", other.Ptr), this)
+    AppendRight(other) => (DllCall("Color\CanvasAppendRight", "Ptr", this.Ptr, "Ptr", other.Ptr), this)
 
-    AppendBottom(other) => (DllCall("Color\ColorBufferAppendBottom", "Ptr", this.Ptr, "Ptr", other.Ptr), this)
+    AppendBottom(other) => (DllCall("Color\CanvasAppendBottom", "Ptr", this.Ptr, "Ptr", other.Ptr), this)
 
     /**
      * Converts a linear index to x and y coordinates.
      * @param {number} index - The linear index to convert.
      * @param {number} &x - Output parameter for the x-coordinate.
      * @param {number} &y - Output parameter for the y-coordinate.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    XYFromIndex(index, &x, &y) => (DllCall("Color\ColorBufferGetXY", "Ptr", this.Ptr, "Int", index, "Int*", &x, "Int*", &y), this)
+    XYFromIndex(index, &x, &y) => (DllCall("Color\CanvasGetXY", "Ptr", this.Ptr, "Int", index, "Int*", &x, "Int*", &y), this)
 
     /**
      * Converts x and y coordinates to a linear index.
      * @param {number} x - The x-coordinate.
      * @param {number} y - The y-coordinate.
      * @param {number} `&index` - Output parameter for the linear index.
-     * @returns {ColorBuffer}
+     * @returns {Canvas}
      */
-    IndexFromXY(x, y, &index) => (DllCall("Color\ColorBufferGetIndex", "Ptr", this.Ptr, "Int", x, "Int", y, "Int*", &index), this)
+    IndexFromXY(x, y, &index) => (DllCall("Color\CanvasGetIndex", "Ptr", this.Ptr, "Int", x, "Int", y, "Int*", &index), this)
 
-    Draw(hwnd, x, y) => (DllCall("Color\DrawColorBuffer", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y), this)
+    Draw(hwnd, x, y) => (DllCall("Color\DrawCanvas", "Ptr", this.Ptr, "Ptr", hwnd, "Int", x, "Int", y), this)
 
     /**
-     * Creates a ColorBuffer instance from a pointer.
-     * @param {Ptr} Ptr - The pointer to the ColorBuffer data.
-     * @returns {ColorBuffer} A new ColorBuffer instance.
+     * Creates a Canvas instance from a pointer.
+     * @param {Ptr} Ptr - The pointer to the Canvas data.
+     * @returns {Canvas} A new Canvas instance.
      */
-    static FromPtr(Ptr) => {base: ColorBuffer.Prototype, Ptr: Ptr}
+    static FromPtr(Ptr) => {base: Canvas.Prototype, Ptr: Ptr}
 }
 
 class Gradient
@@ -2146,7 +2383,9 @@ class Gradient
 
     /**
      * Gets or sets the total number of steps in the gradient.
-     * @returns {number}
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.TotalSteps := 30
      */
     TotalSteps
     {
@@ -2154,64 +2393,128 @@ class Gradient
         set => DllCall("Color\GradientSetTotalSteps", "Ptr", this.Ptr, "Int", value)
     }
 
+    /**
+     * Gets or sets the type of Gradient: `Linear`, `Radial`, or `Conical`.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Type := Gradient.Type.Radial
+     */
     Type
     {
         get => DllCall("Color\GradientGetType", "Ptr", this.Ptr, "Int")
         set => DllCall("Color\GradientSetType", "Ptr", this.Ptr, "Int", value)
     }
 
+    /**
+     * Gets or sets the angle of the gradient
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Angle += 45 ; Increase the angle by 45°
+     */
     Angle
     {
         get => DllCall("Color\GradientGetAngle", "Ptr", this.Ptr, "Float")
         set => DllCall("Color\GradientSetAngle", "Ptr", this.Ptr, "Float", value)
     }
 
+    /**
+     * Gets or sets the number of Vertices in the gradient.
+     * Only affects Radial gradients.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Vertices := 5
+     */
     Vertices
     {
         get => DllCall("Color\GradientGetVertices", "Ptr", this.Ptr, "Int")
         set => DllCall("Color\GradientSetVertices", "Ptr", this.Ptr, "Int", value)
     }
 
-    Distortion
-    {
-        get => DllCall("Color\GradientGetDistortion", "Ptr", this.Ptr, "Float")
-        set => DllCall("Color\GradientSetDistortion", "Ptr", this.Ptr, "Float", value)
-    }
-
+    /**
+     * Gets or sets the Edge Sharpness, which controls the transitions between the "edges" of the gradient.
+     *
+     * This will only have an effect when `this.Vertices` is >= 3.
+     *
+     * Values greater than `0` lead to "sharper" gradients, while
+     * values less than `0` lead to "rounder" gradients.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.EdgeSharpness := 2.368
+     */
     EdgeSharpness
     {
         get => DllCall("Color\GradientGetEdgeSharpness", "Ptr", this.Ptr, "Float")
         set => DllCall("Color\GradientSetEdgeSharpness", "Ptr", this.Ptr, "Float", value)
     }
 
+    /**
+     * Gets or sets the Wavelength of the gradient.
+     *
+     * Must be greater than or equal to `0`.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Wavelength := 2
+     */
     Wavelength
     {
         get => DllCall("Color\GradientGetWavelength", "Ptr", this.Ptr, "Float")
         set => DllCall("Color\GradientSetWavelength", "Ptr", this.Ptr, "Float", value)
     }
 
+    /**
+     * Gets or sets the Amplitude of the gradient.
+     *
+     * Must be greater than or equal to `0`.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Amplitude := .125
+     */
     Amplitude
     {
         get => DllCall("Color\GradientGetAmplitude", "Ptr", this.Ptr, "Float")
         set => DllCall("Color\GradientSetAmplitude", "Ptr", this.Ptr, "Float", value)
     }
 
+    /**
+     * Gets or sets the Repetitions of the gradient.
+     * @example
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Repetitions := 2
+     */
     Repetitions
     {
         get => DllCall("Color\GradientGetRepetitions", "Ptr", this.Ptr, "Float")
         set => DllCall("Color\GradientSetRepetitions", "Ptr", this.Ptr, "Float", value)
     }
 
+    /**
+     * Gets or sets the Focus of the gradient.
+     * Only affects Radial and Conical gradients.
+     * @example
+     * ; Setting
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * exGradient.Focus := { X: 200, Y: 150 } ; X and Y can not be set individually
+     *
+     * ; Getting
+     * exGradient := Gradient(20, Color.Red, Color.Blue)
+     * strX := "Focus X: " exGradient.Focus.X
+     * strY := "Focus Y: " exGradient.Focus.Y
+     */
     Focus
     {
         get
         {
             x := Buffer(4, 0), y := Buffer(4, 0)
             DllCall("Color\GradientGetFocus", "Ptr", this.Ptr, "Ptr", x, "Ptr", y)
-            return {x: NumGet(x, "Float"), y: NumGet(y, "Float")}
+            return {X: NumGet(x, "Float"), Y: NumGet(y, "Float")}
         }
 
-        set => DllCall("Color\GradientSetFocus", "Ptr", this.Ptr, "Float", value.x, "Float", value.y)
+        set => DllCall("Color\GradientSetFocus", "Ptr", this.Ptr, "Float", value.X, "Float", value.Y)
+    }
+
+    ColorStops
+    {
+        get => Gradient.ColorStopArray(this.Ptr)
     }
 
     /**
@@ -2219,27 +2522,37 @@ class Gradient
      * @param {number} totalSteps - The total number of steps in the gradient.
      * @param {...Color} colors - The colors to initialize the gradient with.
      */
-    __New(totalStepsOrGradient, colors*)
+    __New(totalStepsOrGradient := 0, colors*)
     {
         if totalStepsOrGradient is Gradient  ; Copy constructor
         {
             this.Ptr := DllCall("Color\CreateGradientFromGradient", "Ptr", totalStepsOrGradient.Ptr, "Ptr")
         }
-        else if colors.Length  ; Constructor with steps and colors
+        else if colors.Length  ; Constructor with steps and Colors or ColorStops
         {
-            cols := Buffer(colors.Length * 4)
-            For i, col in colors
-                NumPut("UInt", col.ToInt(), cols, (i-1) * 4)
+            if (colors[1] is Color) and (totalStepsOrGradient > 1)
+            {
+                cols := Buffer(colors.Length * 4)
+                For i, col in colors
+                    NumPut("UInt", col.ToInt(), cols, (i-1) * 4)
 
-            this.Ptr := DllCall("Color\CreateGradientFromColors",
-                "Int", totalStepsOrGradient,
-                "Ptr", cols,
-                "Int", colors.Length,
-                "Ptr")
+                this.Ptr := DllCall("Color\CreateGradientFromColors", "Int", totalStepsOrGradient, "Ptr", cols, "Int", colors.Length, "Ptr")
+            }
+            else if colors[1] is ColorStop
+            {
+                stops := Buffer(A_PtrSize * colors.Length)
+                for i, stop in colors
+                    NumPut("Ptr", stop.Ptr, stops, (i - 1) * A_PtrSize)
+
+                this.Ptr := DllCall("Color\CreateGradientFromColorStops", "Int", totalStepsOrGradient, "Ptr", stops, "Int", colors.Length, "Ptr")
+            }
         }
-        else  ; Constructor with just steps (rainbow gradient)
+        else  if totalStepsOrGradient is Number ; Constructor with just steps (rainbow gradient)
         {
-            this.Ptr := DllCall("Color\CreateGradientFromSteps", "Int", totalStepsOrGradient, "Ptr")
+            if totalStepsOrGradient > 0
+                this.Ptr := DllCall("Color\CreateGradientFromSteps", "Int", totalStepsOrGradient, "Ptr")
+            else
+                this.Ptr := DllCall("Color\CreateGradient", "Ptr")
         }
     }
 
@@ -2251,13 +2564,22 @@ class Gradient
     __Delete() => DllCall("Color\DeleteGradient", "Ptr", this.Ptr)
 
     /**
-     * Retrieves a Color object at the specified index in the gradient.
-     * @param {number} index - The index of the color to retrieve (1-based).
-     * @returns {Color} The Color object at the specified index.
+     * Gets an interpolated Color object at the specified step.
+     * @param {number} index - The index of the Color to retrieve (1-based).
+     * @returns {Color} The Color object at the specified step.
      */
     __Item[index]
     {
-        get => Color.FromPtr(DllCall("Color\GradientGetColorAtStep", "Ptr", this.Ptr, "Int", index - 1, "Ptr"))
+        get
+        {
+            --index
+            totalSteps := DllCall("Color\GradientGetTotalSteps", "Ptr", this.Ptr, "Int")
+
+            if (index < 0) or (index >= totalSteps)
+                throw Error("Index is out of bounds.")
+
+            return this.GetColorAtStep(index)
+        }
     }
 
     /**
@@ -2279,7 +2601,7 @@ class Gradient
                 return false
             }
 
-            col := Color.FromPtr(DllCall("Color\GradientGetColorAtStep", "Ptr", this.Ptr, "Int", index, "Ptr"))
+            col := this.GetColorAtStep(index)
             index++
             return true
         }
@@ -2294,7 +2616,7 @@ class Gradient
             }
 
             index := currentIndex
-            col := Color.FromPtr(DllCall("Color\GradientGetColorAtStep", "Ptr", this.Ptr, "Int", currentIndex, "Ptr"))
+            col := this.GetColorAtStep(index)
             currentIndex++
             return true
         }
@@ -2308,35 +2630,33 @@ class Gradient
     }
 
     /**
-     * @method SetType
-     * @param {number} type - The type of gradient (Linear, Radial, or Conical).
-     */
-    SetType(type) => (DllCall("Color\GradientSetType", "Ptr", this.Ptr, "Int", type), this)
-
-    /**
-     * @method SetRepetition
-     * @param {number} repetition - The repetition mode (Repeat, Reflect, or Pad).
-     */
-    SetRepetition(repetition) => (DllCall("Color\GradientSetRepetition", "Ptr", this.Ptr, "Int", repetition), this)
-
-    /**
-     * @method AddColorStop
+     * Adds a new color stop at the specified position.
      * @param {Color} col - The color to add at the stop.
-     * @param {number} position - The position of the color stop (0.0 to 1.0).
+     * @param {number} position - The position of the color stop (0 to 1).
      */
-    AddColorStop(col, position) => (DllCall("Color\GradientAddColorStop", "Ptr", this.Ptr, "UInt", col.ToInt(), "Float", position), this)
+    AddColorStop(colStop) => (DllCall("Color\GradientAddColorStop", "Ptr", this.Ptr, "UInt", colStop.Color.ToInt(), "Float", colStop.Position), this)
+
     /**
      * @method RemoveColorStop
-     * @param {number} position - The position of the color stop to remove.
+     * @param {number} position - The index of the ColorStop to remove (must exist).
      */
-    RemoveColorStop(position) => (DllCall("Color\GradientRemoveColorStop", "Ptr", this.Ptr, "Float", position), this)
+    RemoveColorStopAt(index) => (DllCall("Color\GradientRemoveColorStopAt", "Ptr", this.Ptr, "Float", index - 1), this)
+
+    CreateColorStopFromPosition(position) => ColorStop(position, this.GetColorAtPosition(position))
 
     /**
-     * @method GetColorAt
-     * @param {number} position - The position to get the color at (0.0 to 1.0).
-     * @returns {Color} The color at the specified position.
+     * Gets an interpolated Color object at a position along the gradient.
+     * @param {number} position - The position to get the color at (0 to 1).
+     * @returns {Color} The Color object at the specified position.
      */
-    GetColorAt(position) => Color(DllCall("Color\GradientGetColorAt", "Ptr", this.Ptr, "Float", position, "UInt"))
+    GetColorAtPosition(position) => Color(DllCall("Color\GradientGetColorAt", "Ptr", this.Ptr, "Float", position, "UInt"))
+
+    /**
+     * Gets an interpolated Color object at the specified step.
+     * @param {number} index - The index of the Color to retrieve (1-based).
+     * @returns {Color} The Color object at the specified step.
+     */
+    GetColorAtStep(step) => Color.FromPtr(DllCall("Color\GradientGetColorAtStep", "Ptr", this.Ptr, "Int", step, "Ptr"))
 
     /**
      * @method Rotate
@@ -2369,6 +2689,7 @@ class Gradient
      * @returns {Gradient} A new Gradient instance from the serialized data.
      */
     static Deserialize(data) => (dataBuf := Buffer(StrPut(data, "UTF-8")), StrPut(data, dataBuf, "UTF-8"), ptr := DllCall("Color\GradientDeserialize", "Ptr", dataBuf, "Ptr"), Gradient.FromPtr(ptr))
+
     /**
      * @method ToHBITMAP
      * @param {number} width - The width of the bitmap.
@@ -2451,6 +2772,82 @@ class Gradient
      * @returns {Gradient} A new Gradient instance with the base set to Gradient.Prototype and the given Ptr.
      */
     static FromPtr(Ptr) => {base: Gradient.Prototype, Ptr: Ptr}
+
+    class ColorStopArray
+    {
+        Ptr := 0
+        Length := 0
+
+        __New(Ptr)
+        {
+            this.Ptr := Ptr
+            this.Length := DllCall("Color\GradientGetColorStopCount", "Ptr", this.Ptr, "Int")
+        }
+
+        /**
+         * Gets or Sets a ColorStop object at the specified index.
+         * @param {number} index - The index of the ColorStop to retrieve (1-based).
+         * @returns {Color} The ColorStop object at the specified index.
+         */
+        __Item[index]
+        {
+            get => ColorStop.FromPtr(DllCall("Color\GradientGetColorStopAt", "Ptr", this.Ptr, "Int", index - 1, "Ptr"))
+            set
+            {
+                if (value == "") or (value == False)
+                    DllCall("Color\GradientRemoveColorStopAt", "Ptr", this.Ptr, "Int", index - 1)
+                else
+                    DllCall("Color\GradientSetColorStopAt", "Ptr", this.Ptr, "Int", index - 1, "Ptr", value.Ptr)
+            }
+        }
+
+        /**
+         * Provides enumeration functionality for the Gradient's ColorStops.
+         * @param {number} num - The number of values to return for each iteration (1 or 2).
+         * @returns {function} An enumerator function based on the specified number.
+         * @throws {ValueError} If an invalid enumerator type is specified.
+         */
+        __Enum(num)
+        {
+            totalStops := DllCall("Color\GradientGetColorStopCount", "Ptr", this.Ptr, "Int")
+
+            enumColorStop(&col)
+            {
+                static index := 0
+                if (index >= totalStops)
+                {
+                    index := 0
+                    return false
+                }
+
+                col := ColorStop.FromPtr(DllCall("Color\GradientGetColorStopAt", "Ptr", this.Ptr, "Int", index, "Ptr"))
+                index++
+                return true
+            }
+
+            enumIndexColorStop(&index, &col)
+            {
+                static currentIndex := 0
+                if (currentIndex >= totalStops)
+                {
+                    currentIndex := 0
+                    return false
+                }
+
+                index := currentIndex
+                col := ColorStop.FromPtr(DllCall("Color\GradientGetColorStopAt", "Ptr", this.Ptr, "Int", index, "Ptr"))
+                currentIndex++
+                return true
+            }
+
+            switch num
+            {
+                case 1: return enumColorStop
+                case 2: return enumIndexColorStop
+                default: throw ValueError("Invalid enumerator type")
+            }
+        }
+    }
 }
 
 class ColorPicker
@@ -2702,7 +3099,7 @@ class ColorMatrix
     static FromPtr(ptr) => { base: ColorMatrix.Prototype, Ptr: ptr }
 
     ; Inversion Matrix
-    static Invert := ColorMatrix([
+    static Invert => ColorMatrix([
         [-1.000,  0.000,  0.000,  0.000,  1.000],
         [ 0.000, -1.000,  0.000,  0.000,  1.000],
         [ 0.000,  0.000, -1.000,  0.000,  1.000],
@@ -2710,26 +3107,8 @@ class ColorMatrix
         [ 0.000,  0.000,  0.000,  0.000,  1.000]
     ])
 
-    ; "Heat Vision"
-    static HeatVision := ColorMatrix([
-        [ 2.000, -1.000, -1.000,  0.000,  0.300],
-        [-1.000,  1.500, -1.000,  0.000,  0.200],
-        [ 1.000, -1.000,  2.000,  0.000,  0.100],
-        [ 0.000,  0.000,  0.000,  1.000,  0.000],
-        [ 0.000,  0.000,  0.000,  0.000,  1.000]
-    ])
-
-    ; "Night Vision"
-    static NightVision := ColorMatrix([
-        [ 0.100,  0.400,  0.000,  0.000,  0.100],
-        [ 0.300,  1.500,  0.200,  0.000,  0.200],
-        [ 0.000,  0.200,  0.100,  0.000,  0.000],
-        [ 0.000,  0.000,  0.000,  1.000,  0.000],
-        [ 0.000,  0.000,  0.000,  0.000,  1.000]
-    ])
-
     ; Applies an effect reminiscent of Polaroid photographs
-    static Polaroid := ColorMatrix([
+    static Polaroid => ColorMatrix([
         [ 1.438, -0.062, -0.062,  0.000,  0.000],
         [-0.122,  1.378, -0.122,  0.000,  0.000],
         [-0.016, -0.016,  1.483,  0.000,  0.000],
@@ -2738,7 +3117,7 @@ class ColorMatrix
     ])
 
     ; Applies a technicolor effect
-    static Technicolor := ColorMatrix([
+    static Technicolor => ColorMatrix([
         [ 1.600, -0.400, -0.200,  0.000,  0.000],
         [-0.200,  1.400, -0.200,  0.000,  0.000],
         [-0.200, -0.400,  1.600,  0.000,  0.000],
@@ -2747,7 +3126,7 @@ class ColorMatrix
     ])
 
     ; Applies an effect similar to vintage film
-    static VintageFilm := ColorMatrix([
+    static VintageFilm => ColorMatrix([
         [ 0.900,  0.100,  0.100,  0.000,  0.000],
         [ 0.100,  0.900,  0.100,  0.000,  0.000],
         [ 0.100,  0.200,  0.700,  0.000,  0.000],
@@ -2756,7 +3135,7 @@ class ColorMatrix
     ])
 
     ; Applies a kodachrome-like effect
-    static Kodachrome := ColorMatrix([
+    static Kodachrome => ColorMatrix([
         [ 1.200, -0.100,  0.000,  0.000,  0.100],
         [-0.050,  1.100,  0.000,  0.000,  0.050],
         [ 0.000, -0.100,  1.000,  0.000,  0.000],
@@ -2765,7 +3144,7 @@ class ColorMatrix
     ])
 
     ; Applies an effect that imitates cross-processing
-    static CrossProcess := ColorMatrix([
+    static CrossProcess => ColorMatrix([
         [ 1.000,  0.200,  0.100,  0.000,  0.000],
         [ 0.000,  1.100, -0.100,  0.000,  0.000],
         [ 0.100,  0.100,  1.000,  0.000,  0.000],
@@ -2774,7 +3153,7 @@ class ColorMatrix
     ])
 
     ; Applies a blue-channel grayscale effect
-    static BlueChannelGrayscale := ColorMatrix([
+    static BlueChannelGrayscale => ColorMatrix([
         [ 0.000,  0.000,  1.000,  0.000,  0.000],
         [ 0.000,  0.000,  1.000,  0.000,  0.000],
         [ 0.000,  0.000,  1.000,  0.000,  0.000],
@@ -2783,7 +3162,7 @@ class ColorMatrix
     ])
 
     ; Applies a green-channel grayscale effect
-    static GreenChannelGrayscale := ColorMatrix([
+    static GreenChannelGrayscale => ColorMatrix([
         [ 0.000,  1.000,  0.000,  0.000,  0.000],
         [ 0.000,  1.000,  0.000,  0.000,  0.000],
         [ 0.000,  1.000,  0.000,  0.000,  0.000],
@@ -2792,7 +3171,7 @@ class ColorMatrix
     ])
 
     ; Applies a red-channel grayscale effect
-    static RedChannelGrayscale := ColorMatrix([
+    static RedChannelGrayscale => ColorMatrix([
         [ 1.000,  0.000,  0.000,  0.000,  0.000],
         [ 1.000,  0.000,  0.000,  0.000,  0.000],
         [ 1.000,  0.000,  0.000,  0.000,  0.000],
@@ -2801,9 +3180,35 @@ class ColorMatrix
     ])
 }
 
+class ColorStop
+{
+    Ptr := 0
+
+    __New(position, col)
+    {
+        this.Ptr := DllCall("Color\ColorStopCreate", "Float", position, "Ptr", col.ToInt(), "Ptr")
+    }
+
+    __Delete() => DllCall("Color\ColorStopDelete", "Ptr", this.Ptr)
+
+    Position
+    {
+        get => DllCall("Color\ColorStopGetPosition", "Ptr", this.Ptr, "Float")
+        set => DllCall("Color\ColorStopSetPosition", "Ptr", this.Ptr, "Float", value)
+    }
+
+    Color
+    {
+        get => Color.FromPtr(DllCall("Color\ColorStopGetColor", "Ptr", this.Ptr, "Ptr"))
+        set => DllCall("Color\ColorStopSetColor", "Ptr", this.Ptr, "Ptr", value.ToInt())
+    }
+
+    static FromPtr(ptr) => { base: ColorStop.Prototype, Ptr: ptr }
+}
+
 /**
- * A function to display a `Color`, `Gradient`, or `ColorBuffer`, along with some information about it.
- * @param {Color|Gradient|ColorBuffer} obj The Color, Gradient, or ColorBuffer to display.
+ * A function to display a `Color`, `Gradient`, or `Canvas`, along with some information about it.
+ * @param {Color|Gradient|Canvas} obj The Color, Gradient, or Canvas to display.
  * @param {String} title The title of the window.
  * @returns {Integer} wParam
  */
@@ -2813,8 +3218,8 @@ Showcase(obj, title := "Showcase")
         wParam := DllCall("Color\ShowColorShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
     else if obj is Gradient
         wParam := DllCall("Color\ShowGradientShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
-    else if obj is ColorBuffer
-        wParam := DllCall("Color\ShowColorBufferShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
+    else if obj is Canvas
+        wParam := DllCall("Color\ShowCanvasShowcase", "Ptr", obj.Ptr, "AStr", title, "Int")
     else
         throw Error("Invalid Type Received.")
 

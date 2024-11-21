@@ -22,12 +22,12 @@ namespace KTLib
         , m_isGradient(true)
     { }
 
-    Showcase::Showcase(ColorBuffer* buffer, const char* title)
+    Showcase::Showcase(Canvas* buffer, const char* title)
         : m_hwnd(nullptr)
         , m_title(title)
         , m_color(nullptr)
         , m_gradient(nullptr)
-        , m_buffer(new ColorBuffer(*buffer))
+        , m_buffer(new Canvas(*buffer))
         , m_isColor(false)
         , m_isGradient(false)
         , m_bufferWidth(buffer->GetWidth())
@@ -145,7 +145,7 @@ namespace KTLib
                     showcase->DrawPreview(hdc);
                     if (showcase->m_isColor) showcase->DrawColorInfo(hdc);
                     else if (showcase->m_gradient) showcase->DrawGradientInfo(hdc);
-                    else if (showcase->m_buffer) showcase->DrawColorBufferInfo(hdc);
+                    else if (showcase->m_buffer) showcase->DrawCanvasInfo(hdc);
                 }
 
                 EndPaint(hwnd, &ps);
@@ -321,7 +321,7 @@ namespace KTLib
         SelectObject(hdc, hOldFont);
     }
 
-    void Showcase::DrawColorBufferInfo(HDC hdc)
+    void Showcase::DrawCanvasInfo(HDC hdc)
     {
         RECT rect = { 120, 10, 400, 100 };
 

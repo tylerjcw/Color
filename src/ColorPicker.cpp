@@ -370,20 +370,17 @@ namespace KTLib
         MONITORINFO monitorInfo = {  };
         GetMonitorInfo(hMonitor, &monitorInfo);
 
-        // Get DPI scale for current monitor
         float dpiScale = GetDpiForWindow(m_previewWindow) / 96.0f;
 
-        // Scale preview dimensions
         int scaledPreviewWidth = m_previewWidth * dpiScale;
         int scaledPreviewHeight = (m_previewHeight + m_textHeight) * dpiScale;
 
-        // Calculate preview position
         int previewX = m_currentPosition.x + m_previewXOffset;
         int previewY = m_currentPosition.y + m_previewYOffset;
 
-        // Check each monitor for edge detection
         int monitorCount = GetSystemMetrics(SM_CMONITORS);
-        for (int i = 1; i <= monitorCount; i++) {
+        for (int i = 1; i <= monitorCount; i++)
+        {
             MONITORINFO mi = {  };
             HMONITOR hMon = MonitorFromPoint({m_currentPosition.x, m_currentPosition.y}, MONITOR_DEFAULTTONEAREST);
             GetMonitorInfo(hMon, &mi);
@@ -393,17 +390,16 @@ namespace KTLib
                 m_currentPosition.y >= mi.rcMonitor.top &&
                 m_currentPosition.y < mi.rcMonitor.bottom)
             {
-                // Adjust for right edge
-                if (previewX + scaledPreviewWidth > mi.rcMonitor.right) {
+                if (previewX + scaledPreviewWidth > mi.rcMonitor.right)
+                {
                     previewX = m_currentPosition.x - m_previewXOffset * dpiScale - scaledPreviewWidth;
                 }
 
-                // Adjust for bottom edge
-                if (previewY + scaledPreviewHeight > mi.rcMonitor.bottom) {
+                if (previewY + scaledPreviewHeight > mi.rcMonitor.bottom)
+                {
                     previewY = m_currentPosition.y - m_previewYOffset * dpiScale - scaledPreviewHeight;
                 }
 
-                // Ensure preview stays within monitor bounds
                 previewX = static_cast<int>(std::max(static_cast<LONG>(mi.rcMonitor.left),
                                           std::min(static_cast<LONG>(previewX),
                                           mi.rcMonitor.right - scaledPreviewWidth)));
@@ -414,7 +410,6 @@ namespace KTLib
             }
         }
 
-        // Draw preview window content
         Gdiplus::Graphics graphics(m_buffer);
         graphics.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
         graphics.Clear(Gdiplus::Color::Transparent);
@@ -429,7 +424,8 @@ namespace KTLib
         graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);
         graphics.DrawImage(&capture, 0.0f, 0.0f, scaledWidth, scaledHeight);
 
-        switch (m_viewMode) {
+        switch (m_viewMode)
+        {
             case ViewMode::Grid: DrawGrid(graphics); break;
             case ViewMode::Dot: DrawDot(graphics); break;
             case ViewMode::Crosshair: DrawCrosshair(graphics); break;

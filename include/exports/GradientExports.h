@@ -7,9 +7,11 @@ extern "C"
     using namespace KTLib;
 
     #pragma region Constructors
+    GRADIENT_API Gradient* CreateGradient();
     GRADIENT_API Gradient* CreateGradientFromSteps(int totalSteps);
     GRADIENT_API Gradient* CreateGradientFromGradient(Gradient* gradient);
-    GRADIENT_API Gradient* CreateGradientFromColors(int totalSteps, unsigned int* colors, int colorCount);
+    GRADIENT_API Gradient* CreateGradientFromColors(int totalSteps, uint32_t* colors, int colorCount);
+    GRADIENT_API Gradient* CreateGradientFromColorStops(int totalSteps, ColorStop** stops, int count);
     #pragma endregion
 
     #pragma region Gradient Functions
@@ -20,12 +22,18 @@ extern "C"
     GRADIENT_API void GradientSetVertices(Gradient* gradient, int vertices);
     GRADIENT_API void GradientSetType(Gradient* gradient, int type);
     GRADIENT_API int GradientGetType(Gradient* gradient);
-    GRADIENT_API void GradientAddColorStop(Gradient* gradient, unsigned int color, float position);
-    GRADIENT_API void GradientRemoveColorStop(Gradient* gradient, float position);
     GRADIENT_API Color* GradientGetColorAt(Gradient* gradient, float position);
     GRADIENT_API void GradientRotate(Gradient* gradient, float angle);
     GRADIENT_API void GradientReverse(Gradient* gradient);
     GRADIENT_API void GradientShift(Gradient* gradient, float amount);
+    #pragma endregion
+
+    #pragma region ColorStop functions
+    GRADIENT_API void GradientAddColorStop(Gradient* gradient, uint32_t color, float position);
+    GRADIENT_API void GradientRemoveColorStop(Gradient* gradient, float position);
+    GRADIENT_API ColorStop* GradientGetColorStopAt(Gradient* gradient, int index);
+    GRADIENT_API void GradientSetColorStopAt(Gradient* gradient, int index, ColorStop* colorStop);
+    GRADIENT_API int GradientGetColorStopCount(Gradient* gradient);
     #pragma endregion
 
     #pragma region Color Modification Functions
@@ -59,5 +67,14 @@ extern "C"
     GRADIENT_API Gradient* GradientDeserialize(const char* data);
     GRADIENT_API HBITMAP GradientCreateHBITMAP(Gradient* gradient, int width, int height);
     GRADIENT_API void DrawGradient(Gradient* gradient, HWND hwnd, int x, int y, int width, int height);
+    #pragma endregion
+
+    #pragma region ColorStop exports
+    GRADIENT_API ColorStop* ColorStopCreate(float position, uint32_t color) { return new ColorStop(position, Color(color)); }
+    GRADIENT_API void ColorStopDelete(ColorStop* colorStop) { delete colorStop; }
+    GRADIENT_API float ColorStopGetPosition(ColorStop* colorStop) { return colorStop->position; }
+    GRADIENT_API Color* ColorStopGetColor(ColorStop* colorStop) { return new Color(colorStop->color); }
+    GRADIENT_API void ColorStopSetPosition(ColorStop* colorStop, float position) { colorStop->position = position; }
+    GRADIENT_API void ColorStopSetColor(ColorStop* colorStop, uint32_t color) { colorStop->color = Color(color); }
     #pragma endregion
 }

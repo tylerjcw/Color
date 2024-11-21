@@ -5,12 +5,24 @@ using namespace KTLib;
 extern "C"
 {
     #pragma region Constructors
+    GRADIENT_API Gradient* CreateGradient() { return new Gradient(); }
     GRADIENT_API Gradient* CreateGradientFromSteps(int totalSteps) { return new Gradient(totalSteps); }
     GRADIENT_API Gradient* CreateGradientFromGradient(Gradient* gradient) { return new Gradient(*gradient); }
-    GRADIENT_API Gradient* CreateGradientFromColors(int totalSteps, unsigned int* colors, int colorCount)
+
+    GRADIENT_API Gradient* CreateGradientFromColors(int totalSteps, uint32_t* colors, int colorCount)
     {
-        std::vector<unsigned int> colorVec(colors, colors + colorCount);
+        std::vector<uint32_t> colorVec(colors, colors + colorCount);
         return new Gradient(totalSteps, colorVec);
+    }
+
+    GRADIENT_API Gradient* CreateGradientFromColorStops(int totalSteps, ColorStop** stops, int count)
+    {
+        std::vector<ColorStop> colorStops;
+        colorStops.reserve(count);
+
+        for (int i = 0; i < count; i++) colorStops.push_back(*stops[i]);
+
+        return new Gradient(totalSteps, colorStops);
     }
     #pragma endregion
 
@@ -22,13 +34,18 @@ extern "C"
     GRADIENT_API void GradientSetVertices(Gradient* gradient, int vertices) { gradient->SetVertices(vertices); }
     GRADIENT_API void GradientSetType(Gradient* gradient, int type) { gradient->SetType(static_cast<GradientType>(type)); }
     GRADIENT_API int GradientGetType(Gradient* gradient) { return static_cast<int>(gradient->GetType()); }
-    GRADIENT_API void GradientAddColorStop(Gradient* gradient, unsigned int color, float position) { gradient->AddColorStop(color, position); }
-    GRADIENT_API void GradientRemoveColorStop(Gradient* gradient, float position) { gradient->RemoveColorStop(position); }
     GRADIENT_API Color* GradientGetColorAt(Gradient* gradient, float position) { return new Color(gradient->GetColorAt(position)); }
     GRADIENT_API void GradientRotate(Gradient* gradient, float angle) { gradient->Rotate(angle); }
     GRADIENT_API void GradientReverse(Gradient* gradient) { gradient->Reverse(); }
     GRADIENT_API void GradientShift(Gradient* gradient, float amount) { gradient->Shift(amount); }
+    #pragma endregion
 
+    #pragma region ColorStop Functions
+    GRADIENT_API void GradientAddColorStop(Gradient* gradient, uint32_t color, float position) { gradient->AddColorStop(Color(color), position); }
+    GRADIENT_API void GradientRemoveColorStopAt(Gradient* gradient, int index) { gradient->RemoveColorStopAt(index); }
+    GRADIENT_API ColorStop* GradientGetColorStopAt(Gradient* gradient, int index) { const ColorStop& original = gradient->GetColorStopAt(index); return new ColorStop(original.position, original.color); }
+    GRADIENT_API void GradientSetColorStopAt(Gradient* gradient, int index, ColorStop* colorStop) { gradient->UpdateColorStop(index, *colorStop); }
+    GRADIENT_API int GradientGetColorStopCount(Gradient* gradient) { return gradient->GetColorStopCount(); }
     #pragma endregion
 
     #pragma region Color Modification Functions

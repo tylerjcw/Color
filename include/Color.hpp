@@ -72,6 +72,13 @@ namespace KTLib
         friend ColorMatrix operator*(double factor, const ColorMatrix& matrix) { return matrix * factor; }
     };
 
+    enum class YCbCrType
+    {
+        BT601,
+        BT709,
+        BT2020
+    };
+
     class Color
     {
         private:
@@ -192,12 +199,26 @@ namespace KTLib
             static Color FromHWB(double h, double w, double b, int a = 255);
             void ToHSP(double& h, double& s, double& p) const;
             static Color FromHSP(double h, double s, double p, int a = 255);
+            void ToHCY(double& h, double& c, double& y) const;
+            static Color FromHCY(double h, double c, double y, int a = 255);
+            void ToHCG(double& h, double& c, double& g) const;
+            static Color FromHCG(double h, double c, double g, int a = 255);
+            void ToTSL(double& t, double& s, double& l) const;
+            static Color FromTSL(double t, double s, double l, int a);
+            void ToCMY(double& c, double& m, double& y) const;
+            static Color FromCMY(double c, double m, double y, int a = 255);
             void ToCMYK(double& c, double& m, double& y, double& k) const;
             static Color FromCMYK(double c, double m, double y, double k, int a = 255);
             void ToXYZ_D50(double& x, double& y, double& z) const;
             static Color FromXYZ_D50(double x, double y, double z, int a = 255);
             void ToXYZ_D65(double& x, double& y, double& z) const;
             static Color FromXYZ_D65(double x, double y, double z, int a = 255);
+            void ToUCS(double& u, double& v, double& w) const;
+            static Color FromUCS(double u, double v, double w, int a);
+            void ToUVW(double& u, double& v, double& w) const;
+            static Color FromUVW(double u, double v, double w, int a);
+            void ToXYY(double& x, double& y, double& Y) const;
+            static Color FromXYY(double x, double y, double Y, int a = 255);
             void ToLab(double& l, double& a, double& b) const;
             static Color FromLab(double l, double a, double b, int alpha = 255);
             void ToLuv(double& L, double& u, double& v) const;
@@ -206,6 +227,20 @@ namespace KTLib
             static Color FromYIQ(double y, double i, double q, int a = 255);
             void ToYPbPr(double& y, double& cb, double& cr) const;
             static Color FromYPbPr(double y, double cb, double cr, int a = 255);
+            void ToYCbCr(double& y, double& cb, double& cr, YCbCrType type = YCbCrType::BT709) const;
+            static Color FromYCbCr(double y, double cb, double cr, int a = 255, YCbCrType type = YCbCrType::BT709);
+            void ToYCgCo(double& y, double& cg, double& co) const;
+            static Color FromYCgCo(double y, double cg, double co, int a = 255);
+            void ToYDbDr(double& y, double& db, double& dr) const;
+            static Color FromYDbDr(double y, double db, double dr, int a = 255);
+            void ToYcCbcCrc(double& y, double& cb, double& cr) const;
+            static Color FromYcCbcCrc(double y, double cb, double cr, int a = 255);
+            void ToYUV(double& y, double& u, double& v) const;
+            static Color FromYUV(double y, double u, double v, int a = 255);
+            void ToYES(double& y, double& e, double& s) const;
+            static Color FromYES(double y, double e, double s, int a = 255);
+            void ToJPEG(double& y, double& cb, double& cr) const;
+            static Color FromJPEG(double y, double cb, double cr, int a);
             void ToLCHab(double& l, double& c, double& h) const;
             static Color FromLCHab(double l, double c, double h, int a = 255);
             void ToLCHuv(double& l, double& c, double& h) const;
@@ -220,6 +255,8 @@ namespace KTLib
             static Color FromOKLab(double l, double a, double b, int alpha = 255);
             void ToOKLCH(double& outL, double& outC, double& outH) const;
             static Color FromOKLCH(double l, double c, double h, int alpha = 255);
+            void ToACEScg(double& r, double& g, double& b) const;
+            static Color FromACEScg(double r, double g, double b, int a);
             double ToDuv() const;
             double ToTemp() const;
             static Color FromTemp(double temp);
@@ -238,27 +275,31 @@ namespace KTLib
             static Color Multiply(const Color& color1, const Color& color2);
             static Color Overlay(const Color& color1, const Color& color2);
 
-            static void ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, bool isHue = false);
+            static void ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, double minRange = 0.0, double maxRange = 100.0);
 
-            void ShiftTemp(double amount);
-            void ShiftHue(double degrees);
-            void ShiftSaturation(double amount);
-            void ShiftLightness(double amount);
-            void ShiftValue(double amount);
-            void ShiftIntensity(double amount);
-            void ShiftWhiteLevel(double amount);
-            void ShiftBlackLevel(double amount);
-            void ShiftContrast(double amount);
-            void Grayscale();
-            void Sepia(double factor);
-            void CrossProcess(double factor);
-            void Moonlight(double factor);
-            void VintageFilm(double factor);
-            void Technicolor(double factor);
-            void Polaroid(double factor);
+            void   ShiftTemp(double amount);
+            void   ShiftHue(double degrees);
+            void   ShiftSaturation(double amount);
+            void   ShiftLightness(double amount);
+            void   ShiftValue(double amount);
+            void   ShiftIntensity(double amount);
+            void   ShiftPerception(double amount);
+            void   ShiftWhiteLevel(double amount);
+            void   ShiftBlackLevel(double amount);
+            void   ShiftContrast(double amount);
+            void   ShiftChroma(double amount);
+            void   ShiftLuma(double amount);
+            void   ShiftGray(double amount);
+            void   Grayscale(double factor = 1);
+            void   Sepia(double factor = 1);
+            void   CrossProcess(double factor = 1);
+            void   Moonlight(double factor = 1);
+            void   VintageFilm(double factor = 1);
+            void   Technicolor(double factor = 1);
+            void   Polaroid(double factor = 1);
             double GetLuminance() const;
             double GetContrast(const Color& other) const;
-            bool IsAccessible(const Color& background, const AccessibilityLevel level = AccessibilityLevel::AA) const;
+            bool   IsAccessible(const Color& background, const AccessibilityLevel level = AccessibilityLevel::AA) const;
 
             static inline Color AliceBlue()            { return Color(0xFFF0F8FF); }
             static inline Color AntiqueWhite()         { return Color(0xFFFAEBD7); }

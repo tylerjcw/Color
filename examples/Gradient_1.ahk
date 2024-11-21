@@ -87,7 +87,7 @@ class GradientGui extends Gui
         this.grad.Focus := {x: this.FocusXUpDown.Value / 100, y: this.FocusYUpDown.Value / 100}
         this.grad.Vertices := this.VerticesUpDown.Value
         this.grad.Amplitude := this.AmplitudeUpDown.Value
-        this.Redraw()
+        this.grad.Draw(this.Hwnd, 0, 180, this.Width, this.Height)
     }
 
     Animate()

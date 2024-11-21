@@ -721,6 +721,206 @@ namespace KTLib
         );
     }
 
+    //HCY Functions
+    void Color::ToHCY(double& h, double& c, double& y) const
+    {
+        double nR, nG, nB;
+        Normalize(nR, nG, nB);
+
+        double sum = nR + nG + nB;
+        if (sum == 0)
+        {
+            h = c = y = 0;
+            return;
+        }
+
+        // Normalize RGB values by their sum
+        nR /= sum;
+        nG /= sum;
+        nB /= sum;
+
+        // Calculate hue using arccos formula
+        h = std::acos(
+            (0.5 * ((nR - nG) + (nR - nB))) /
+            std::sqrt((nR - nG)*(nR - nG) + (nR - nB)*(nG - nB))
+        );
+
+        if (nB > nG) h = 2 * CONST_PI - h;
+
+        // Convert radians to degrees
+        h = h * 180.0 / CONST_PI;
+
+        // Calculate chroma/saturation
+        c = (1.0 - 3.0 * std::min({nR, nG, nB})) * 100.0;
+
+        // Calculate intensity/luma
+        y = sum * 255.0 / 3.0;
+    }
+
+    Color Color::FromHCY(double h, double c, double y, int a)
+    {
+        // Convert degrees to radians
+        double hRad = std::fmod(h + 360.0, 360.0) * CONST_PI / 180.0;
+
+        double s = std::clamp(c, 0.0, 100.0) / 100.0;
+        double i = std::clamp(y, 0.0, 255.0) / 255.0;
+
+        const double pi3 = CONST_PI / 3.0;
+        double r, g, b;
+
+        if (hRad < (2.0 * pi3))
+        {
+            b = i * (1.0 - s);
+            r = i * (1.0 + (s * std::cos(hRad) / std::cos(pi3 - hRad)));
+            g = i * (1.0 + (s * (1.0 - std::cos(hRad) / std::cos(pi3 - hRad))));
+        }
+        else if (hRad < (4.0 * pi3))
+        {
+            hRad -= 2.0 * pi3;
+            r = i * (1.0 - s);
+            g = i * (1.0 + (s * std::cos(hRad) / std::cos(pi3 - hRad)));
+            b = i * (1.0 + (s * (1.0 - std::cos(hRad) / std::cos(pi3 - hRad))));
+        }
+        else
+        {
+            hRad -= 4.0 * pi3;
+            g = i * (1.0 - s);
+            b = i * (1.0 + (s * std::cos(hRad) / std::cos(pi3 - hRad)));
+            r = i * (1.0 + (s * (1.0 - std::cos(hRad) / std::cos(pi3 - hRad))));
+        }
+
+        return Color(
+            static_cast<uint8_t>(r * 255),
+            static_cast<uint8_t>(g * 255),
+            static_cast<uint8_t>(b * 255),
+            a
+        );
+    }
+
+    //HCG Functions
+    void Color::ToHCG(double& h, double& c, double& g) const
+    {
+        double r, g_, b;
+        Normalize(r, g_, b);
+
+        double max = std::max({r, g_, b});
+        double min = std::min({r, g_, b});
+        double chroma = max - min;
+
+        g = 0;
+        if (chroma < 1) g = min / (1 - chroma) * 100;
+
+        c = chroma * 100;
+
+        if (chroma > 0)
+        {
+            if (max == r) h = std::fmod((g_ - b) / chroma, 6.0);
+            else if (max == g_) h = 2.0 + (b - r) / chroma;
+            else h = 4.0 + (r - g_) / chroma;
+
+            h *= 60;
+            h = std::fmod(h + 360, 360.0);
+        }
+        else
+        {
+            h = 0;
+        }
+    }
+
+    Color Color::FromHCG(double h, double c, double g, int a)
+    {
+        h = std::fmod(h, 360.0) / 360.0;
+        c = std::clamp(c, 0.0, 100.0) / 100.0;
+        g = std::clamp(g, 0.0, 100.0) / 100.0;
+
+        if (c == 0.0) return Color(g * 255, g * 255, g * 255, a);
+
+        double hi = std::fmod(h, 1.0) * 6.0;
+        double v = std::fmod(hi, 1.0);
+        double w = 1.0 - v;
+
+        double pure[3] = {0, 0, 0};
+        switch (static_cast<int>(hi))
+        {
+            case 0: pure[0] = 1; pure[1] = v; pure[2] = 0; break;
+            case 1: pure[0] = w; pure[1] = 1; pure[2] = 0; break;
+            case 2: pure[0] = 0; pure[1] = 1; pure[2] = v; break;
+            case 3: pure[0] = 0; pure[1] = w; pure[2] = 1; break;
+            case 4: pure[0] = v; pure[1] = 0; pure[2] = 1; break;
+            default: pure[0] = 1; pure[1] = 0; pure[2] = w;
+        }
+
+        double mg = (1.0 - c) * g;
+        return Color(
+            (c * pure[0] + mg) * 255,
+            (c * pure[1] + mg) * 255,
+            (c * pure[2] + mg) * 255,
+            a
+        );
+    }
+
+    // TSL (Tint, Saturation, Lightness) Functions
+    void Color::ToTSL(double& t, double& s, double& l) const
+    {
+        double r = this->r;
+        double g = this->g;
+        double b = this->b;
+
+        double sum = r + g + b;
+        double r_ = (r / sum - 1.0/3.0);
+        double g_ = (g / sum - 1.0/3.0);
+
+        t = g_ != 0 ? 0.5 - std::atan2(g_, r_) / (2.0 * CONST_PI) : 0;
+        s = std::sqrt(9.0/5.0 * (r_*r_ + g_*g_));
+        l = (0.299*r + 0.587*g + 0.114*b) / 255.0;
+    }
+
+    Color Color::FromTSL(double t, double s, double l, int a)
+    {
+        double x = std::tan(2.0 * CONST_PI * (t - 0.25));
+        x *= x;
+
+        double r = std::sqrt(5.0 * s*s / (9.0 * (1.0/x + 1.0))) + 1.0/3.0;
+        double g = std::sqrt(5.0 * s*s / (9.0 * (x + 1.0))) + 1.0/3.0;
+        double k = l / (0.185 * r + 0.473 * g + 0.114);
+
+        double B = k * (1.0 - r - g);
+        double G = k * g;
+        double R = k * r;
+
+        return Color(
+            static_cast<uint8_t>(std::clamp(R * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(G * 255.0, 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(B * 255.0, 0.0, 255.0)),
+            a
+        );
+    }
+
+    // CMY Functions
+    void Color::ToCMY(double& c, double& m, double& y) const
+    {
+        double nR, nG, nB;
+        Normalize(nR, nG, nB);
+
+        c = (1.0 - nR) * 100.0;
+        m = (1.0 - nG) * 100.0;
+        y = (1.0 - nB) * 100.0;
+    }
+
+    Color Color::FromCMY(double c, double m, double y, int a)
+    {
+        c = std::clamp(c, 0.0, 100.0) / 100.0;
+        m = std::clamp(m, 0.0, 100.0) / 100.0;
+        y = std::clamp(y, 0.0, 100.0) / 100.0;
+
+        return Color(
+            (1.0 - c) * 255,
+            (1.0 - m) * 255,
+            (1.0 - y) * 255,
+            a
+        );
+    }
+
     // CMYK Functions
     void Color::ToCMYK(double& c, double& m, double& y, double& k) const
     {
@@ -805,6 +1005,106 @@ namespace KTLib
         double B = 0.0557101 * X + -0.2040211 * Y + 1.0569959 * Z;
 
         return Color::FromLinearSRGB(R, G, B, a);
+    }
+
+    // UCS Color Space (Obsolete)
+    void Color::ToUCS(double& u, double& v, double& w) const
+    {
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+
+        u = x * 2.0/3.0;
+        v = y;
+        w = 0.5 * (-x + 3.0*y + z);
+    }
+
+    Color Color::FromUCS(double u, double v, double w, int a)
+    {
+        double x = 1.5 * u;
+        double y = v;
+        double z = 1.5 * u - 3.0 * v + 2.0 * w;
+
+        return FromXYZ_D65(x, y, z, a);
+    }
+
+    // UVW Functions
+    void Color::ToUVW(double& u, double& v, double& w) const
+    {
+        double x, y, z;
+        ToXYZ_D65(x, y, z);
+
+        // D65 whitepoint values
+        const double xn = 95.047;
+        const double yn = 100.000;
+        const double zn = 108.883;
+
+        const double un = (4.0 * xn) / (xn + 15.0 * yn + 3.0 * zn);
+        const double vn = (6.0 * yn) / (xn + 15.0 * yn + 3.0 * zn);
+
+        double _u = 4.0 * x / (x + 15.0 * y + 3.0 * z);
+        double _v = 6.0 * y / (x + 15.0 * y + 3.0 * z);
+
+        w = 25.0 * std::pow(y, 1.0/3.0) - 17.0;
+        u = 13.0 * w * (_u - un);
+        v = 13.0 * w * (_v - vn);
+    }
+
+    Color Color::FromUVW(double u, double v, double w, int a)
+    {
+        if (w == 0) return Color(0, 0, 0, a);
+
+        // D65 whitepoint values
+        const double xn = 95.047;
+        const double yn = 100.000;
+        const double zn = 108.883;
+
+        const double un = (4.0 * xn) / (xn + 15.0 * yn + 3.0 * zn);
+        const double vn = (6.0 * yn) / (xn + 15.0 * yn + 3.0 * zn);
+
+        double y = std::pow((w + 17.0) / 25.0, 3.0);
+
+        double _u = u / (13.0 * w) + un;
+        double _v = v / (13.0 * w) + vn;
+
+        double x = (6.0 / 4.0) * y * _u / _v;
+        double z = y * (2.0 / _v - 0.5 * _u / _v - 5.0);
+
+        return FromXYZ_D65(x, y, z, a);
+    }
+
+    // XYY Functions
+    void Color::ToXYY(double& x, double& y, double& Y) const
+    {
+        double X, Z;
+        ToXYZ_D65(X, Y, Z);
+
+        double sum = X + Y + Z;
+        if (sum == 0)
+        {
+            x = 0;
+            y = 0;
+            return;
+        }
+
+        x = X / sum;
+        y = Y / sum;
+    }
+
+    Color Color::FromXYY(double x, double y, double Y, int a)
+    {
+        double X, Z;
+
+        if (y == 0)
+        {
+            X = Z = 0;
+        }
+        else
+        {
+            X = x * Y / y;
+            Z = (1 - x - y) * Y / y;
+        }
+
+        return FromXYZ_D65(X, Y, Z, a);
     }
 
     // CIE Lab Methods
@@ -902,11 +1202,11 @@ namespace KTLib
         pr = (nR - y) / 1.4746;
     }
 
-    Color Color::FromYPbPr(double y, double cb, double cr, int a)
+    Color Color::FromYPbPr(double y, double pb, double pr, int a)
     {
-        double r = std::clamp(y + 0.0000 * cb + 1.4022 * cr, 0.0, 1.0);
-        double g = std::clamp(y - 0.3456 * cb - 0.7145 * cr, 0.0, 1.0);
-        double b = std::clamp(y + 1.7710 * cb + 0.0000 * cr, 0.0, 1.0);
+        double r = std::clamp(y + 0.0000 * pb + 1.4022 * pr, 0.0, 1.0);
+        double g = std::clamp(y - 0.3456 * pb - 0.7145 * pr, 0.0, 1.0);
+        double b = std::clamp(y + 1.7710 * pb + 0.0000 * pr, 0.0, 1.0);
 
         return Color(
             static_cast<uint8_t>(std::clamp(r * 255.0, 0.0, 255.0)),
@@ -916,7 +1216,236 @@ namespace KTLib
         );
     }
 
-    // LCHab
+    // YCbCr Functions
+    void Color::ToYCbCr(double& y, double& cb, double& cr, YCbCrType type) const
+    {
+        double r = this->r;
+        double g = this->g;
+        double b = this->b;
+
+        switch(type)
+        {
+            case YCbCrType::BT601:
+                y = 0.299 * r + 0.587 * g + 0.114 * b;
+                cb = (b - y) / 1.772 + 128;
+                cr = (r - y) / 1.402 + 128;
+                break;
+
+            case YCbCrType::BT709:
+                y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                cb = (b - y) / 1.8556 + 128;
+                cr = (r - y) / 1.5748 + 128;
+                break;
+
+            case YCbCrType::BT2020:
+                y = 0.2627 * r + 0.6780 * g + 0.0593 * b;
+                cb = (b - y) / 1.8814 + 128;
+                cr = (r - y) / 1.4746 + 128;
+                break;
+        }
+    }
+
+    Color Color::FromYCbCr(double y, double cb, double cr, int a, YCbCrType type)
+    {
+        double r, g, b;
+
+        switch(type) {
+            case YCbCrType::BT601:
+                cb -= 128;
+                cr -= 128;
+                r = y + 1.402 * cr;
+                g = y - (0.299 * 1.402 / 0.587) * cr - (0.114 * 1.772 / 0.587) * cb;
+                b = y + 1.772 * cb;
+                break;
+
+            case YCbCrType::BT709:
+                cb -= 128;
+                cr -= 128;
+                r = y + 1.5748 * cr;
+                g = y - (0.2126 * 1.5748 / 0.7152) * cr - (0.0722 * 1.8556 / 0.7152) * cb;
+                b = y + 1.8556 * cb;
+                break;
+
+            case YCbCrType::BT2020:
+                cb -= 128;
+                cr -= 128;
+                r = y + 1.4746 * cr;
+                g = y - (0.2627 * 1.4746 / 0.6780) * cr - (0.0593 * 1.8814 / 0.6780) * cb;
+                b = y + 1.8814 * cb;
+                break;
+        }
+
+        return Color(
+            std::clamp(r, 0.0, 255.0),
+            std::clamp(g, 0.0, 255.0),
+            std::clamp(b, 0.0, 255.0),
+            a
+        );
+    }
+
+    // YCgCo Functions
+    void Color::ToYCgCo(double& y, double& cg, double& co) const
+    {
+        double r, g, b;
+        Normalize(r, g, b);
+
+        y = 0.25 * r + 0.5 * g + 0.25 * b;
+        cg = -0.25 * r + 0.5 * g - 0.25 * b;
+        co = 0.5 * r - 0.5 * b;
+    }
+
+    Color Color::FromYCgCo(double y, double cg, double co, int a)
+    {
+        double tmp = y - cg;
+
+        return Color(
+            (tmp + co) * 255,
+            (y + cg) * 255,
+            (tmp - co) * 255,
+            a
+        );
+    }
+
+    // YDbDr Functions
+    void Color::ToYDbDr(double& y, double& db, double& dr) const
+    {
+        double r, g, b;
+        Normalize(r, g, b);
+
+        y = 0.299 * r + 0.587 * g + 0.114 * b;
+        db = -0.450 * r - 0.883 * g + 1.333 * b;
+        dr = -1.333 * r + 1.116 * g + 0.217 * b;
+    }
+
+    Color Color::FromYDbDr(double y, double db, double dr, int a)
+    {
+        double r = y + 0.000092303716148 * db - 0.525912630661865 * dr;
+        double g = y - 0.129132898890509 * db + 0.267899328207599 * dr;
+        double b = y + 0.664679059978955 * db - 0.000079202543533 * dr;
+
+        return Color(
+            r * 255,
+            g * 255,
+            b * 255,
+            a
+        );
+    }
+
+    // YcCbcCrc Functions
+    void Color::ToYcCbcCrc(double& y, double& cb, double& cr) const
+    {
+        const double Kr = 0.2627;
+        const double Kb = 0.0593;
+        double r, g, b;
+        Normalize(r, g, b);
+
+        y = Kr * r + (1 - Kr - Kb) * g + Kb * b;
+        cb = (b - y) / (2 * (1 - Kb));
+        cr = (r - y) / (2 * (1 - Kr));
+    }
+
+    Color Color::FromYcCbcCrc(double y, double cb, double cr, int a)
+    {
+        const double Kr = 0.2627;
+        const double Kb = 0.0593;
+
+        double r = y + 2 * (1 - Kr) * cr;
+        double b = y + 2 * (1 - Kb) * cb;
+        double g = (y - Kr * r - Kb * b) / (1 - Kr - Kb);
+
+        return Color(
+            r * 255,
+            g * 255,
+            b * 255,
+            a
+        );
+    }
+
+    // YUV Functions
+    void Color::ToYUV(double& y, double& u, double& v) const
+    {
+        double r, g, b;
+        Normalize(r, g, b);
+
+        y = (r * 0.299) + (g * 0.587) + (b * 0.114);
+        u = (r * -0.14713) + (g * -0.28886) + (b * 0.436);
+        v = (r * 0.615) + (g * -0.51499) + (b * -0.10001);
+    }
+
+    Color Color::FromYUV(double y, double u, double v, int a)
+    {
+        double r = (y * 1.0) + (u * 0.0) + (v * 1.13983);
+        double g = (y * 1.0) + (u * -0.39465) + (v * -0.58060);
+        double b = (y * 1.0) + (u * 2.02311) + (v * 0.0);
+
+        r = std::clamp(r, 0.0, 1.0);
+        g = std::clamp(g, 0.0, 1.0);
+        b = std::clamp(b, 0.0, 1.0);
+
+        return Color(
+            r * 255,
+            g * 255,
+            b * 255,
+            a
+        );
+    }
+
+    // YES Functions
+    void Color::ToYES(double& y, double& e, double& s) const
+    {
+        double r, g, b;
+        Normalize(r, g, b);
+
+        const double m[9] = {
+            0.253, 0.684, 0.063,
+            0.500, -0.50, 0.0,
+            0.250, 0.250, -0.5
+        };
+
+        y = r * m[0] + g * m[1] + b * m[2];
+        e = r * m[3] + g * m[4] + b * m[5];
+        s = r * m[6] + g * m[7] + b * m[8];
+    }
+
+    Color Color::FromYES(double y, double e, double s, int a)
+    {
+        const double m[9] = {
+            1.0, 1.431, 0.126,
+            1.0, -0.569, 0.126,
+            1.0, 0.431, -1.874
+        };
+
+        double r = y * m[0] + e * m[1] + s * m[2];
+        double g = y * m[3] + e * m[4] + s * m[5];
+        double b = y * m[6] + e * m[7] + s * m[8];
+
+        return Color(
+            r * 255,
+            g * 255,
+            b * 255,
+            a
+        );
+    }
+
+    // JPEG Functions
+    void Color::ToJPEG(double& y, double& cb, double& cr) const
+    {
+        y = 0.299 * r + 0.587 * g + 0.114 * b;
+        cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+        cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+    }
+
+    Color Color::FromJPEG(double y, double cb, double cr, int a)
+    {
+        return Color(
+            static_cast<uint8_t>(std::clamp(y + 1.402 * (cr - 128), 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(y - 0.34414 * (cb - 128) - 0.71414 * (cr - 128), 0.0, 255.0)),
+            static_cast<uint8_t>(std::clamp(y + 1.772 * (cb - 128), 0.0, 255.0)),
+            a
+        );
+    }
+
+    // LCHab Functions
     void Color::ToLCHab(double& l, double& c, double& h) const
     {
         double lab_l, lab_a, lab_b;
@@ -936,7 +1465,7 @@ namespace KTLib
         return FromLab(l, lab_a, lab_b, a);
     }
 
-    // LCHuv
+    // LCHuv Functions
     void Color::ToLCHuv(double &l, double& c, double &h) const
     {
         double L, u, v;
@@ -960,7 +1489,7 @@ namespace KTLib
         return FromLuv(l, u, v, a);
     }
 
-    // YIQ
+    // YIQ Functions
     void Color::ToYIQ(double& y, double& i, double& q) const
     {
         double nR, nG, nB;
@@ -984,7 +1513,7 @@ namespace KTLib
         return Color(r, g, b, a);
     }
 
-    // NCol
+    // NCol Functions
     void Color::ToNCol(std::string& n, double& c, double& l) const
     {
         double h, w, b;
@@ -1013,6 +1542,7 @@ namespace KTLib
         return FromHWB(h, w, b, a);
     }
 
+    // Rec.2020 Functions
     void Color::ToRec2020(double& outR, double& outG, double& outB) const
     {
         double x, y, z;
@@ -1050,6 +1580,7 @@ namespace KTLib
         return FromXYZ_D65(x * 100, y * 100, z * 100, a);
     }
 
+    // Display P3 Functions
     void Color::ToDisplayP3(double& outR, double& outG, double& outB) const
     {
         double x, y, z;
@@ -1087,6 +1618,7 @@ namespace KTLib
         return FromXYZ_D65(x * 100, y * 100, z * 100, a);
     }
 
+    // OKLab Functions
     void Color::ToOKLab(double& outL, double& outa, double& outb) const
     {
         // First convert to XYZ
@@ -1130,6 +1662,7 @@ namespace KTLib
         return FromXYZ_D65(x * 100, y * 100, z * 100, alpha);
     }
 
+    // OKLCH Functions
     void Color::ToOKLCH(double& outL, double& outC, double& outH) const
     {
         double l, a, b;
@@ -1147,6 +1680,24 @@ namespace KTLib
         double b = c * std::sin(h * CONST_PI / 180.0);
 
         return FromOKLab(l, a, b, alpha);
+    }
+
+    // ACEScg Functions
+    void Color::ToACEScg(double& r, double& g, double& b) const {
+        double nR, nG, nB;
+        ToLinearSRGB(nR, nG, nB);
+
+        r = 0.613132402633762 * nR + 0.339538018878689 * nG + 0.047329578487549 * nB;
+        g = 0.070124380833467 * nR + 0.916394011313437 * nG + 0.013481607853096 * nB;
+        b = 0.020587657528185 * nR + 0.109574571610682 * nG + 0.869837770861133 * nB;
+    }
+
+    Color Color::FromACEScg(double r, double g, double b, int a) {
+        double nR = 1.641731751583133 * r - 0.605038145564156 * g - 0.036693606018977 * b;
+        double nG = -0.125142085797839 * r + 1.096842503381956 * g + 0.028299582415883 * b;
+        double nB = -0.020535295320694 * r - 0.029778933472654 * g + 1.050314228793348 * b;
+
+        return FromLinearSRGB(nR, nG, nB, a);
     }
 
     // From Kelvin (°K)
@@ -1284,21 +1835,23 @@ namespace KTLib
     #pragma endregion
 
     #pragma region Color Manipulation
-    void Color::ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, bool isHue)
+    void Color::ShiftColorComponent(Color* color, double amount, void (Color::*toFunc)(double&, double&, double&) const, Color (*fromFunc)(double, double, double, int), int componentIndex, double minRange, double maxRange)
     {
         double v1, v2, v3;
         (color->*toFunc)(v1, v2, v3);
         double* components[] = {&v1, &v2, &v3};
 
-        if (isHue) *components[componentIndex] = std::fmod(*components[componentIndex] + amount + 360.0, 360.0);
-        else *components[componentIndex] = std::clamp(*components[componentIndex] + amount/100.0, 0.0, 1.0);
+        double range = maxRange - minRange;
+        double normalized = (*components[componentIndex] - minRange) / range;
+        normalized = std::clamp(normalized + amount/100.0, 0.0, 1.0);
+        *components[componentIndex] = normalized * range + minRange;
 
         *color = fromFunc(v1, v2, v3, color->a);
     }
 
     void Color::ShiftTemp(double amount) { *this = FromTemp(ToTemp() + amount); }
 
-    void Color::ShiftHue(double degrees) { ShiftColorComponent(this, degrees, &Color::ToHSL, &Color::FromHSL, 0, true); }
+    void Color::ShiftHue(double degrees) { ShiftColorComponent(this, degrees, &Color::ToHSL, &Color::FromHSL, 0, 0, 360); }
 
     void Color::ShiftSaturation(double amount) { ShiftColorComponent(this, amount, &Color::ToHSL, &Color::FromHSL, 1); }
 
@@ -1306,7 +1859,15 @@ namespace KTLib
 
     void Color::ShiftValue(double amount) { ShiftColorComponent(this, amount, &Color::ToHSV, &Color::FromHSV, 2); }
 
-    void Color::ShiftIntensity(double amount) { ShiftColorComponent(this, amount, &Color::ToHSI, &Color::FromHSI, 2); }
+    void Color::ShiftIntensity(double amount) { ShiftColorComponent(this, amount, &Color::ToHSI, &Color::FromHSI, 2, 0, 255); }
+
+    void Color::ShiftPerception(double amount) { ShiftColorComponent(this, amount, &Color::ToHSP, &Color::FromHSP, 2, 0, 255); }
+
+    void Color::ShiftChroma(double amount) { ShiftColorComponent(this, amount, &Color::ToHCY, &Color::FromHCY, 1); }
+
+    void Color::ShiftLuma(double amount) { ShiftColorComponent(this, amount, &Color::ToHCY, &Color::FromHCY, 2, 0, 255); }
+
+    void Color::ShiftGray(double amount) { ShiftColorComponent(this, amount, &Color::ToHCG, &Color::FromHCG, 2); }
 
     void Color::Complement() { this->ShiftHue(180); }
 
@@ -1365,14 +1926,14 @@ namespace KTLib
         *this += offsetMatrix;
     }
 
-    void Color::Grayscale()
+    void Color::Grayscale(double factor)
     {
         ColorMatrix grayscaleMatrix = {{
-            {0.299, 0.587, 0.114, 0, 0},
-            {0.299, 0.587, 0.114, 0, 0},
-            {0.299, 0.587, 0.114, 0, 0},
-            {0    , 0    , 0    , 1, 0},
-            {0    , 0    , 0    , 0, 1}
+            {0.299 * factor, 0.587 * factor, 0.114 * factor, 0, 0},
+            {0.299 * factor, 0.587 * factor, 0.114 * factor, 0, 0},
+            {0.299 * factor, 0.587 * factor, 0.114 * factor, 0, 0},
+            {0             , 0             , 0             , 1, 0},
+            {0             , 0             , 0             , 0, 1}
         }};
 
         *this *= grayscaleMatrix;
@@ -1415,9 +1976,6 @@ namespace KTLib
         }};
 
         *this *= moonlightMatrix;
-
-        ShiftValue(-10);
-        ShiftBlue(20);
     }
 
     void Color::VintageFilm(double factor)
@@ -1431,10 +1989,6 @@ namespace KTLib
         }};
 
         *this *= vintageMatrix;
-
-        ShiftSaturation(-15);
-        ShiftRed(10);
-        ShiftGreen(5);
     }
 
     void Color::Technicolor(double factor)
@@ -1448,9 +2002,6 @@ namespace KTLib
         }};
 
         *this *= technicolorMatrix;
-
-        ShiftSaturation(30);
-        ShiftContrast(20);
     }
 
     void Color::Polaroid(double factor)
@@ -1464,13 +2015,9 @@ namespace KTLib
         }};
 
         *this *= polaroidMatrix;
-
-        ShiftContrast(25);
-        ShiftRed(10);
-        ShiftGreen(5);
     }
 
-    // Mix, Average, Multiply
+    // Mix, Average, Screen, Multiply, Overlay
     Color Color::Mix(const Color& color1, const Color& color2, double weight)
     {
         weight = std::clamp(weight, 0.0, 1.0);
@@ -1618,16 +2165,23 @@ namespace KTLib
 
     std::string Color::GetDefaultFormat(const char* type)
     {
+        if (strcmp(type, "Hex")  == 0)        return "0x{A}{R}{G}{B}";
         if (strcmp(type, "RGB")  == 0)        return "rgba({R}, {G}, {B}, {A})";
         if (strcmp(type, "HSL")  == 0)        return "hsl({H}, {S}%, {L}%)";
         if (strcmp(type, "HSV")  == 0)        return "hsv({H}, {S}%, {V}%)";
         if (strcmp(type, "HSI")  == 0)        return "hsi({H}, {S}%, {I})";
         if (strcmp(type, "HWB")  == 0)        return "hwb({H}, {W}%, {B}%)";
+        if (strcmp(type, "HSP") == 0)         return "hsp({H}, {S}, {P})";
+        if (strcmp(type, "HCY") == 0)         return "hcy({H}, {C}, {Y})";
+        if (strcmp(type, "HCG") == 0)         return "hcg({H}, {C}, {G})";
+        if (strcmp(type, "TSL") == 0)         return "tsl({T}, {S}, {L})";
+        if (strcmp(type, "CMY") == 0)         return "cmy({C}, {M}, {Y})";
         if (strcmp(type, "CMYK") == 0)        return "cmyk({C}, {M}, {Y}, {K})";
         if (strcmp(type, "XYZ")  == 0)        return "xyz({X}, {Y}, {Z})";
+        if (strcmp(type, "UCS")  == 0)        return "ucs({U}, {C}, {S})";
+        if (strcmp(type, "UVW")  == 0)        return "uvw({U}, {V}, {W})";
+        if (strcmp(type, "XYY") == 0)         return "xyy({X}, {Y1}, {Y2})";
         if (strcmp(type, "Lab")  == 0)        return "lab({L}, {A}, {B})";
-        if (strcmp(type, "YIQ")  == 0)        return "yiq({Y}, {I}, {Q})";
-        if (strcmp(type, "Hex")  == 0)        return "0x{A}{R}{G}{B}";
         if (strcmp(type, "NCol") == 0)        return "ncol({H}, {W}, {B})";
         if (strcmp(type, "SRGB") == 0)        return "srgb({R}, {G}, {B})";
         if (strcmp(type, "ProPhotoRGB") == 0) return "prophoto({R}, {G}, {B})";
@@ -1635,11 +2189,20 @@ namespace KTLib
         if (strcmp(type, "Oklab") == 0)       return "oklab({L}, {A}, {B})";
         if (strcmp(type, "Luv")  == 0)        return "luv({L}, {U}, {V})";
         if (strcmp(type, "LCHab") == 0)       return "lchab({L}, {C}, {H})";
-        if (strcmp(type, "YPbPr") == 0)       return "ypbpr({Y}, {Cb}, {Cr})";
+        if (strcmp(type, "YPbPr") == 0)       return "ypbpr({Y}, {Pb}, {Pr})";
+        if (strcmp(type, "YCbCr") == 0)       return "ycbcr({Y}, {Cb}, {Cr})";
+        if (strcmp(type, "YCgCo") == 0)       return "ycgco({Y}, {Cg}, {Co})";
+        if (strcmp(type, "YcCbcCrc") == 0)    return "yccbccrc({Yc}, {Cbc}, {Crc})";
+        if (strcmp(type, "YDbDr") == 0)       return "ydbdr({Y}, {Db}, {Dr})";
+        if (strcmp(type, "YUV") == 0)         return "yuv({Y}, {U}, {V})";
+        if (strcmp(type, "YES") == 0)         return "yes({Y}, {E}, {S})";
+        if (strcmp(type, "JPEG") == 0)         return "jpeg({Y}, {Cb}, {Cr})";
+        if (strcmp(type, "YIQ")  == 0)        return "yiq({Y}, {I}, {Q})";
         if (strcmp(type, "Rec2020") == 0)     return "rec2020({R}, {G}, {B})";
         if (strcmp(type, "DisplayP3") == 0)   return "displayp3({R}, {G}, {B})";
         if (strcmp(type, "OKLab") == 0)       return "oklab({L}, {A}, {B})";
         if (strcmp(type, "OKLCH") == 0)       return "oklch({L}, {C}, {H})";
+        if (strcmp(type, "ACEScg") == 0)      return "acescg({R}, {G}, {B})";
         throw std::invalid_argument("Unsupported color type");
     }
 
@@ -1745,6 +2308,42 @@ namespace KTLib
             replaceFormatter("{P", p);
             replaceFormatter("{A", static_cast<double>(a));
         }
+        else if (strcmp(lowerType.c_str(), "hcy") == 0)
+        {
+            double h, c, y;
+            ToHCY(h, c, y);
+            replaceFormatter("{H", h);
+            replaceFormatter("{C", c);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "hcg") == 0)
+        {
+            double h, c, g;
+            ToHCG(h, c, g);
+            replaceFormatter("{H", h);
+            replaceFormatter("{C", c);
+            replaceFormatter("{G", g);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "tsl") == 0)
+        {
+            double t, s, l;
+            ToTSL(t, s, l);
+            replaceFormatter("{T", t);
+            replaceFormatter("{S", s);
+            replaceFormatter("{L", l);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "cmy") == 0)
+        {
+            double c, m, y;
+            ToCMY(c, m, y);
+            replaceFormatter("{C", c);
+            replaceFormatter("{M", m);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
         else if (strcmp(lowerType.c_str(), "cmyk") == 0)
         {
             double c, m, y, k;
@@ -1773,6 +2372,33 @@ namespace KTLib
             replaceFormatter("{Z", z);
             replaceFormatter("{A", static_cast<double>(a));
         }
+        else if (strcmp(lowerType.c_str(), "ucs") == 0)
+        {
+            double u, c, s;
+            ToUCS(u, c, s);
+            replaceFormatter("{U", u);
+            replaceFormatter("{C", c);
+            replaceFormatter("{S", s);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "uvw") == 0)
+        {
+            double u, v, w;
+            ToUVW(u, v, w);
+            replaceFormatter("{U", u);
+            replaceFormatter("{V", v);
+            replaceFormatter("{W", w);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "xyy") == 0)
+        {
+            double x, y1, y2;
+            ToXYY(x, y1, y2);
+            replaceFormatter("{X", x);
+            replaceFormatter("{Y1", y1);
+            replaceFormatter("{Y2", y2);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
         else if (strcmp(lowerType.c_str(), "lab") == 0)
         {
             double l, a, b;
@@ -1782,15 +2408,6 @@ namespace KTLib
             replaceFormatter("{B", b);
             replaceFormatter("{T", static_cast<double>(a));
         }
-        else if (strcmp(lowerType.c_str(), "yiq") == 0)
-        {
-            double y, i, q;
-            ToYIQ(y, i, q);
-            replaceFormatter("{Y", y);
-            replaceFormatter("{I", i);
-            replaceFormatter("{Q", q);
-            replaceFormatter("{A", static_cast<double>(a));
-        }
         else if (strcmp(lowerType.c_str(), "ypbpr") == 0)
         {
             double y, cb, cr;
@@ -1798,6 +2415,78 @@ namespace KTLib
             replaceFormatter("{Y", y);
             replaceFormatter("{Pb", cb);
             replaceFormatter("{Pr", cr);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "ycbcr") == 0)
+        {
+            double y, cb, cr;
+            ToYCbCr(y, cb, cr);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{Cb", cb);
+            replaceFormatter("{Cr", cr);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "ycgco") == 0)
+        {
+            double y, cg, co;
+            ToYCgCo(y, cg, co);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{Cg", cg);
+            replaceFormatter("{Co", co);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "yccbccrc") == 0)
+        {
+            double yc, cbc, crc;
+            ToYcCbcCrc(yc, cbc, crc);
+            replaceFormatter("{Yc", yc);
+            replaceFormatter("{Cbc", cbc);
+            replaceFormatter("{Crc", crc);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "ydbdr") == 0)
+        {
+            double y, db, dr;
+            ToYDbDr(y, db, dr);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{Db", db);
+            replaceFormatter("{Dr", dr);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "yuv") == 0)
+        {
+            double y, u, v;
+            ToYUV(y, u, v);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{U", u);
+            replaceFormatter("{V", v);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "yes") == 0)
+        {
+            double y, e, s;
+            ToYES(y, e, s);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{E", e);
+            replaceFormatter("{S", s);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "jpeg") == 0)
+        {
+            double y, cb, cr;
+            ToJPEG(y, cb, cr);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{Cb", cb);
+            replaceFormatter("{Cr", cr);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "yiq") == 0)
+        {
+            double y, i, q;
+            ToYIQ(y, i, q);
+            replaceFormatter("{Y", y);
+            replaceFormatter("{I", i);
+            replaceFormatter("{Q", q);
             replaceFormatter("{A", static_cast<double>(a));
         }
         else if (strcmp(lowerType.c_str(), "lchab") == 0)
@@ -1903,6 +2592,15 @@ namespace KTLib
             replaceFormatter("{L", l);
             replaceFormatter("{C", c);
             replaceFormatter("{H", h);
+            replaceFormatter("{A", static_cast<double>(a));
+        }
+        else if (strcmp(lowerType.c_str(), "acescg") == 0)
+        {
+            double r, g, b;
+            ToACEScg(r, g, b);
+            replaceFormatter("{R", r);
+            replaceFormatter("{G", g);
+            replaceFormatter("{B", b);
             replaceFormatter("{A", static_cast<double>(a));
         }
         else

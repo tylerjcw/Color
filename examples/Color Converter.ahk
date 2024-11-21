@@ -1,15 +1,31 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include <Color>
+#Include <ImagePut>
 
 /**
- * This example will allow you to pick a color or type a color in using either
+ * This example will allow you to pick a color, or type a color in, using either
  * the color function syntax (eg: "rgb(123, 61, 93)", "ncol(B20, 40%, 5%)", "hsl(120, 70%, 50%)", etc...)
  * or using Hex (RRGGBB, or AARRGGBB with "0x" or "#" preceding), or you can use
  * RGB or RGBA ("R, G, B" or "R, G, B, A"). If the input is valid, it will convert it to all supported
- * Color Spaces. You can then click on any of the group boxes to copy the full color string
- * to the clipboard.
+ * Color Spaces. You can then click on any of the group boxes to copy the full color string of that
+ * Color Space to the clipboard.
  */
+
+; Build Color Picker Gradients
+grad_bg := Gradient(2960, Color.Red, Color.Yellow, Color.Lime, Color.Cyan, Color.Blue, Color.Fuchsia, Color.Red) ; The Background (360° Hue)
+grad_wb := Gradient(2960, ColorStop(0, Color.White), ColorStop(0.5, Color.BlackTransparent), ColorStop(1, Color.Black)) ; The foreground (White, to BlackTransparent, to Black)
+grad_wb.Angle := 90
+
+
+; Convert Gradients to HBITMAP
+bgGrad := Canvas.FromGradient(grad_bg, 250, 250)
+fgGrad := Canvas.FromGradient(grad_wb, 250, 250)
+
+
+; Overlay the converted Canvases on top of each other.
+bgGrad.OverlayCanvas(fgGrad, 0, 0)
+bgGrad.SetAlpha(255)
 
 MainGui := Gui()
 MainGui.Title := "Color Converter"
@@ -21,14 +37,15 @@ inputEdit.SetFont("s10", "Consolas")
 pickBtn    := MainGui.Add("Button", "x10 y+7 w200", "Pick Color")
 convertBtn := MainGui.Add("Button", "x220 y10 w80 h80", "Convert")
 colorPreview := MainGui.Add("Progress", "x310 y10 w770 h80 +Background000000")
+complementPreview := MainGui.Add("Picture", "x+10 y10 w798 h80 +Border", "HBITMAP:" bgGrad.ToHBITMAP())
 
-labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "HSL", "HSV", "HSI", "HWB", "HSP", "CMYK", "NCol", "XYZ_D50", "XYZ_D65", "Lab", "LCHab", "YIQ", "Luv", "LCHuv", "YPbPr", "OKLCH", "OKLab", "Rec2020", "DisplayP3"]
+labels := ["Hex", "RGB", "LinearSRGB", "ProPhotoRGB", "AdobeRGB", "Rec2020", "DisplayP3", "ACEScg", "HSL", "HSV", "HSI", "HSP", "HWB", "HCY", "HCG", "TSL", "CMY", "CMYK", "NCol", "XYZ_D50", "XYZ_D65", "XYY", "Lab", "LCHab", "Luv", "LCHuv", "UCS", "UVW", "OKLab", "OKLCH", "YIQ", "YPbPr", "YCbCr", "YCgCo", "YcCbcCrc", "YES", "YUV", "JPEG"]
 
 labelControls := Map()
 componentControls := Map()
 
-gridWidth := 4
-gridHeight := 6
+gridWidth := 7
+gridHeight := 7
 boxWidth := 260
 boxHeight := 120
 marginX := 10
@@ -67,11 +84,13 @@ picker.OnUpdate(PickerUpdate)
 picker.OnExit(PickerExit)
 PickerExit(Color.Black)
 
-MainGui.Show()
+MainGui.Show("Maximize")
 
 #HotIf picker.IsActive()
 
 LButton::
+RButton::
+Escape::
 Space::picker.Stop()
 h::picker.ToggleHighlight()
 m::picker.ToggleViewMode()
@@ -105,7 +124,7 @@ PickerExit(_col)
     if _col is Color
     {
         global col := _col
-        inputEdit.Value := col.Full
+        inputEdit.Value := col.ToString("RGB")
         ConvertColor(col)
     }
 }
@@ -190,6 +209,34 @@ ConvertColor(*)
                     col := Color.FromDisplayP3(match.ch1, match.ch2, match.ch3)
                 case "hsp":
                     col := Color.FromHSP(match.ch1, match.ch2, match.ch3)
+                case "hcy":
+                    col := Color.FromHCY(match.ch1, match.ch2, match.ch3)
+                case "hcg":
+                    col := Color.FromHCG(match.ch1, match.ch2, match.ch3)
+                case "cmy":
+                    col := Color.FromCMY(match.ch1, match.ch2, match.ch3)
+                case "xyy":
+                    col := Color.FromXYY(match.ch1, match.ch2, match.ch3)
+                case "ycbcr":
+                    col := Color.FromYCbCr(match.ch1, match.ch2, match.ch3)
+                case "ycgco":
+                    col := Color.FromYCgCo(match.ch1, match.ch2, match.ch3)
+                case "yccbccrc":
+                    col := Color.FromYcCbcCrc(match.ch1, match.ch2, match.ch3)
+                case "yes":
+                    col := Color.FromYES(match.ch1, match.ch2, match.ch3)
+                case "yuv":
+                    col := Color.FromYUV(match.ch1, match.ch2, match.ch3)
+                case "acescg":
+                    col := Color.FromACEScg(match.ch1, match.ch2, match.ch3)
+                case "tsl":
+                    col := Color.FromTSL(match.ch1, match.ch2, match.ch3)
+                case "jpeg":
+                    col := Color.FromJPEG(match.ch1, match.ch2, match.ch3)
+                case "ucs":
+                    col := Color.FromUCS(match.ch1, match.ch2, match.ch3)
+                case "uvw":
+                    col := Color.FromUVW(match.ch1, match.ch2, match.ch3)
                 default:
                     throw Error("Error in color syntax (function).")
             }
@@ -355,6 +402,89 @@ ConvertColor(*)
         componentControls["HSP"]["1"].Text := "H: " . Round(hsp.H, 4)
         componentControls["HSP"]["2"].Text := "S: " . Round(hsp.S, 4)
         componentControls["HSP"]["3"].Text := "P: " . Round(hsp.P, 4)
+        hcy := col.ToHCY()
+        labelControls["HCY"].Text := col.ToString("HCY")
+        componentControls["HCY"]["1"].Text := "H: " . Round(hcy.H, 4)
+        componentControls["HCY"]["2"].Text := "C: " . Round(hcy.C, 4)
+        componentControls["HCY"]["3"].Text := "Y: " . Round(hcy.Y, 4)
+
+        hcg := col.ToHCG()
+        labelControls["HCG"].Text := col.ToString("HCG")
+        componentControls["HCG"]["1"].Text := "H: " . Round(hcg.H, 4)
+        componentControls["HCG"]["2"].Text := "C: " . Round(hcg.C, 4)
+        componentControls["HCG"]["3"].Text := "G: " . Round(hcg.G, 4)
+
+        cmy := col.ToCMY()
+        labelControls["CMY"].Text := col.ToString("CMY")
+        componentControls["CMY"]["1"].Text := "C: " . Round(cmy.C, 4)
+        componentControls["CMY"]["2"].Text := "M: " . Round(cmy.M, 4)
+        componentControls["CMY"]["3"].Text := "Y: " . Round(cmy.Y, 4)
+
+        xyy := col.ToXYY()
+        labelControls["XYY"].Text := col.ToString("XYY")
+        componentControls["XYY"]["1"].Text := "x: " . Round(xyy.x, 4)
+        componentControls["XYY"]["2"].Text := "y: " . Round(xyy.y, 4)
+        componentControls["XYY"]["3"].Text := "Y: " . Round(xyy.Y, 4)
+
+        ycbcr := col.ToYCbCr()
+        labelControls["YCbCr"].Text := col.ToString("YCbCr")
+        componentControls["YCbCr"]["1"].Text := "Y: " . Round(ycbcr.Y, 4)
+        componentControls["YCbCr"]["2"].Text := "Cb: " . Round(ycbcr.Cb, 4)
+        componentControls["YCbCr"]["3"].Text := "Cr: " . Round(ycbcr.Cr, 4)
+
+        ycgco := col.ToYCgCo()
+        labelControls["YCgCo"].Text := col.ToString("YCgCo")
+        componentControls["YCgCo"]["1"].Text := "Y: " . Round(ycgco.Y, 4)
+        componentControls["YCgCo"]["2"].Text := "Cg: " . Round(ycgco.Cg, 4)
+        componentControls["YCgCo"]["3"].Text := "Co: " . Round(ycgco.Co, 4)
+
+        yccbccrc := col.ToYcCbcCrc()
+        labelControls["YcCbcCrc"].Text := col.ToString("YcCbcCrc")
+        componentControls["YcCbcCrc"]["1"].Text := "Yc: " . Round(yccbccrc.Yc, 4)
+        componentControls["YcCbcCrc"]["2"].Text := "Cbc: " . Round(yccbccrc.Cbc, 4)
+        componentControls["YcCbcCrc"]["3"].Text := "Crc: " . Round(yccbccrc.Crc, 4)
+
+        yes := col.ToYES()
+        labelControls["YES"].Text := col.ToString("YES")
+        componentControls["YES"]["1"].Text := "Y: " . Round(yes.Y, 4)
+        componentControls["YES"]["2"].Text := "E: " . Round(yes.E, 4)
+        componentControls["YES"]["3"].Text := "S: " . Round(yes.S, 4)
+
+        yuv := col.ToYUV()
+        labelControls["YUV"].Text := col.ToString("YUV")
+        componentControls["YUV"]["1"].Text := "Y: " . Round(yuv.Y, 4)
+        componentControls["YUV"]["2"].Text := "U: " . Round(yuv.U, 4)
+        componentControls["YUV"]["3"].Text := "V: " . Round(yuv.V, 4)
+
+        acescg := col.ToACEScg()
+        labelControls["ACEScg"].Text := col.ToString("ACEScg")
+        componentControls["ACEScg"]["1"].Text := "R: " . Round(acescg.R, 4)
+        componentControls["ACEScg"]["2"].Text := "G: " . Round(acescg.G, 4)
+        componentControls["ACEScg"]["3"].Text := "B: " . Round(acescg.B, 4)
+
+        tsl := col.ToTSL()
+        labelControls["TSL"].Text := col.ToString("TSL")
+        componentControls["TSL"]["1"].Text := "T: " . Round(tsl.T, 4)
+        componentControls["TSL"]["2"].Text := "S: " . Round(tsl.S, 4)
+        componentControls["TSL"]["3"].Text := "L: " . Round(tsl.L, 4)
+
+        jpeg := col.ToJPEG()
+        labelControls["JPEG"].Text := col.ToString("JPEG")
+        componentControls["JPEG"]["1"].Text := "Y: " . Round(jpeg.Y, 4)
+        componentControls["JPEG"]["2"].Text := "Cb: " . Round(jpeg.Cb, 4)
+        componentControls["JPEG"]["3"].Text := "Cr: " . Round(jpeg.Cr, 4)
+
+        ucs := col.ToUCS()
+        labelControls["UCS"].Text := col.ToString("UCS")
+        componentControls["UCS"]["1"].Text := "U: " . Round(ucs.U, 4)
+        componentControls["UCS"]["2"].Text := "C: " . Round(ucs.C, 4)
+        componentControls["UCS"]["3"].Text := "S: " . Round(ucs.S, 4)
+
+        uvw := col.ToUVW()
+        labelControls["UVW"].Text := col.ToString("UVW")
+        componentControls["UVW"]["1"].Text := "U: " . Round(uvw.U, 4)
+        componentControls["UVW"]["2"].Text := "V: " . Round(uvw.V, 4)
+        componentControls["UVW"]["3"].Text := "W: " . Round(uvw.W, 4)
     ;}
     ;catch Error as err
     ;{

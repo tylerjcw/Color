@@ -20,11 +20,11 @@ if (Test-Path $outputFile)
 
 $sourceFiles = @(
     "$srcDir/Color.cpp",
-    "$srcDir/ColorBuffer.cpp",
+    "$srcDir/Canvas.cpp",
     "$srcDir/Gradient.cpp",
     "$srcDir/ColorPicker.cpp",
     "$srcDir/Showcase.cpp",
-    "$srcDir/exports/ColorBufferExports.cpp",
+    "$srcDir/exports/CanvasExports.cpp",
     "$srcDir/exports/ColorExports.cpp",
     "$srcDir/exports/GradientExports.cpp"
     "$srcDir/exports/ColorPickerExports.cpp",

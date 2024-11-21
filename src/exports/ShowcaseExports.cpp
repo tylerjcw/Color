@@ -16,7 +16,7 @@ extern "C"
         return showcase.Show();
     }
 
-    SHOWCASE_API void ShowColorBufferShowcase(ColorBuffer* buffer, const char* title)
+    SHOWCASE_API void ShowCanvasShowcase(Canvas* buffer, const char* title)
     {
         Showcase showcase(buffer, title);
         showcase.Show();
